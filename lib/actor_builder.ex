@@ -60,7 +60,7 @@ defmodule ActorBuilder do
     rest = [
       (quote do
         use GenServer.Behaviour
-        import Actor.Privates
+        import ExActor.Privates
       end) | 
       rest ++ generate_actor_funs(actor_definitions)
     ]

@@ -1,11 +1,11 @@
-defmodule Actor do
+defmodule ExActor do
   defmodule Functional do
     @moduledoc """
     Provides syntactic sugar for defining and creating actors.
     Note: this code is built for demonstration purposes only. Do not use it in production.
   
     Examples:
-      import Actor.Functional
+      import ExActor.Functional
     
       actor Calculator do
         defcast inc(state, x) do new_state(state + x) end
@@ -37,7 +37,7 @@ defmodule Actor do
     Note: this code is built for demonstration purposes only. Do not use it in production.
 
     Examples:
-      import Actor.Objectified
+      import ExActor.Objectified
 
       actor Calculator do
         defcast inc(state, x) do new_state(state + x) end

@@ -1,6 +1,6 @@
 require Objectify
 
-defmodule Exactor.Test do
+defmodule ExActor.Test do
   use ExUnit.Case 
 
   test "objectify" do 
@@ -11,7 +11,7 @@ defmodule Exactor.Test do
   end
   
   defmodule Functional do
-    import Actor.Functional
+    import ExActor.Functional
     
     actor Actor do
       defcast set(_, x) do new_state(x) end
@@ -45,7 +45,7 @@ defmodule Exactor.Test do
   
   
   defmodule Objectified do
-    import Actor.Objectified
+    import ExActor.Objectified
     
     actor Actor do
       defcast set(_, x) do new_state(x) end
@@ -70,7 +70,7 @@ defmodule Exactor.Test do
   
   
   defmodule Custom do
-    import Actor.Objectified
+    import ExActor.Objectified
     
     actor Actor do
       defcast set(_, x) do new_state(x) end
@@ -93,7 +93,7 @@ defmodule Exactor.Test do
   
   
   defmodule PatternMatching do
-    import Actor.Objectified
+    import ExActor.Objectified
     
     actor Actor do
       defcast set(_, x) do new_state(x) end

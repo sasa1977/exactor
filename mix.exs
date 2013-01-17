@@ -1,8 +1,8 @@
-defmodule Exactor.Mixfile do
+defmodule ExActor.Mixfile do
    use Mix.Project 
 
    def project do
-     [project: "Exactor", version: "0.1", app: :exactor] 
+     [project: "ExActor", version: "0.1", app: :exactor] 
    end
 
    def application, do: []
