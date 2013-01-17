@@ -81,6 +81,8 @@ defmodule ActorBuilder do
   
   defp actor_fun_def?({:defcall, _, _}) do true end
   defp actor_fun_def?({:defcast, _, _}) do true end
+  defp actor_fun_def?({:impcall, _, _}) do true end
+  defp actor_fun_def?({:impcast, _, _}) do true end
   defp actor_fun_def?({:def, _, [{:handle_call, _, _}, _]}) do true end
   defp actor_fun_def?({:def, _, [{:handle_cast, _, _}, _]}) do true end
   defp actor_fun_def?(_) do false end
@@ -105,6 +107,14 @@ defmodule ActorBuilder do
   
   def implement_funs(acc, {:def, _, _} = pure_fun) do
     add_definition(acc, pure_fun)
+  end
+  
+  def implement_funs(acc, {:impcall, _, _} = actor_definition) do
+    add_definition(acc, implementation_fun(setelem(actor_definition, 0, :defcall)))
+  end
+  
+  def implement_funs(acc, {:impcast, _, _} = actor_definition) do
+    add_definition(acc, implementation_fun(setelem(actor_definition, 0, :defcast)))
   end
   
   def implement_funs(acc, actor_definition) do
