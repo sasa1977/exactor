@@ -46,7 +46,7 @@ __Warning__: not thoroughly tested, use at your own risk.
 ## Handling of return values
 
     defcall a(state) do 5 end                 # doesn't change state
-    defcall b(state) do reply(5, 6)           # responds 5, sets new state to 6
+    defcall b(state) do reply(5, 6) end       # responds 5, sets new state to 6
     
     defcast c(_) do :ok end                   # doesn't change state
     defcast d(_) do new_state(:ok) end        # sets new state
