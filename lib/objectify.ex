@@ -14,7 +14,9 @@ defmodule Objectify do
     do_transform(block)
   end
   
-  defp do_transform({{:.,_,[left, right]}, _, args}) do
+  # Had to exclude Kernel calls from objectification, because pattern matching on
+  # records didn't work. Must investigate it further.
+  defp do_transform({{:., _, [left, right]}, _, args}) when left != Kernel do
     quote do
       Objectify.object_invoke(
         unquote(do_transform(left)), 

@@ -102,6 +102,7 @@ defmodule ExActor.Test do
   defmodule PatternMatching do
     import ExActor.Objectified
     
+    defrecord TestRecord, a: nil
     actor Actor do
       defcast set(_, x) do new_state(x) end
       defcall get(state) do state end
@@ -118,6 +119,9 @@ defmodule ExActor.Test do
       
       defcast test_pattern_state2(3) do new_state(:three) end
       impcast test_pattern_state2(4) do new_state(:four) end
+      
+      defcast test_pattern_state3(TestRecord[a: nil]) do new_state(:anil) end
+      impcast test_pattern_state3(_) do new_state(:a1) end
     end
   end
   
@@ -136,6 +140,9 @@ defmodule ExActor.Test do
       
       assert actor.set(3).test_pattern_state2.get == :three
       assert actor.set(4).test_pattern_state2.get == :four
+      
+      assert actor.set(PatternMatching.TestRecord.new(a: nil)).test_pattern_state3.get == :anil
+      assert actor.set(PatternMatching.TestRecord.new(a: 1)).test_pattern_state3.get == :a1
     end
   end
 end
