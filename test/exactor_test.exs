@@ -67,6 +67,13 @@ defmodule ExActor.Test do
     end
   end
   
+  test "initialization" do
+    Objectify.transform do
+      assert Objectified.Actor.start.get == nil
+      assert Objectified.Actor.start(1).get == 1
+    end
+  end
+  
   
   
   defmodule Custom do
