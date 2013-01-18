@@ -53,7 +53,9 @@ __Warning__: not thoroughly tested, use at your own risk.
     
     def init(arg) do initial_state(arg) end   # sets initial state
     
-    # standard gen_server:call/cast responses are left intact
+    # standard gen_server:call/cast responses are left intact:
+    defcall e(_) do {:reply, response, newstate} end
+    defcast f(_) do {:noreply, newstate} end
 
 ## Explicit call/cast
 
