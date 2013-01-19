@@ -41,11 +41,11 @@ defmodule ExActor.Test do
     import ExActor.Functional
     
     actor Actor do
-      defcast set(_, x) do new_state(x) end
-      defcall get(state) do state end
-      defcast leave_state(_) do 0 end
-      defcall reply_leave_state(_) do 0 end
-      defcall full_reply(_) do reply(1,2) end
+      defcast set(_, x), do: new_state(x)
+      defcall get(state), do: state
+      defcast leave_state(_), do: 0
+      defcall reply_leave_state(_), do: 0
+      defcall full_reply(_), do: reply(1,2)
     end
   end
   
@@ -75,10 +75,10 @@ defmodule ExActor.Test do
     import ExActor.Objectified
     
     actor Actor do
-      defcast set(_, x) do new_state(x) end
-      defcast inc(value, x) do new_state(value + x) end
-      defcast dec(value, x) do new_state(value - x) end
-      defcall get(value) do value end
+      defcast set(_, x), do: new_state(x)
+      defcast inc(value, x), do: new_state(value + x)
+      defcast dec(value, x), do: new_state(value - x)
+      defcall get(value), do: value
     end
   end
   
@@ -107,11 +107,11 @@ defmodule ExActor.Test do
     import ExActor.Objectified
     
     actor Actor do
-      defcast set(_, x) do new_state(x) end
-      defcall get(state) do state end
+      defcast set(_, x), do: new_state(x)
+      defcall get(state), do: state
       
-      def handle_call(:test_call, _, state) do {:reply, :call_reply, state} end
-      def handle_cast({:multiply, new_value}, state) do {:noreply, state * new_value} end
+      def handle_call(:test_call, _, state), do: {:reply, :call_reply, state}
+      def handle_cast({:multiply, new_value}, state), do: {:noreply, state * new_value}
     end
   end
   
@@ -131,24 +131,24 @@ defmodule ExActor.Test do
     
     defrecord TestRecord, a: nil
     actor Actor do
-      defcast set(_, x) do new_state(x) end
-      defcall get(state) do state end
+      defcast set(_, x), do: new_state(x)
+      defcall get(state), do: state
       
-      defcall test_pattern_arg(_, 1) do :one end
-      def handle_call({:test_pattern_arg, 2}, _, state) do {:reply, :two, state} end
-      defcall test_pattern_arg(_, any) do any end
+      defcall test_pattern_arg(_, 1), do: :one
+      def handle_call({:test_pattern_arg, 2}, _, state), do: {:reply, :two, state}
+      defcall test_pattern_arg(_, any), do: any
       
-      defcall test_pattern_state(1) do :one end
-      impcall test_pattern_state(2) do :two end
+      defcall test_pattern_state(1), do: :one
+      impcall test_pattern_state(2), do: :two
       
-      defcast test_pattern_arg2(_, 1) do new_state(:one) end
-      defcast test_pattern_arg2(_, 2) do new_state(:two) end
+      defcast test_pattern_arg2(_, 1), do: new_state(:one)
+      defcast test_pattern_arg2(_, 2), do: new_state(:two)
       
-      defcast test_pattern_state2(3) do new_state(:three) end
-      impcast test_pattern_state2(4) do new_state(:four) end
+      defcast test_pattern_state2(3), do: new_state(:three)
+      impcast test_pattern_state2(4), do: new_state(:four)
       
-      defcast test_pattern_state3(TestRecord[a: nil]) do new_state(:anil) end
-      impcast test_pattern_state3(_) do new_state(:a1) end
+      defcast test_pattern_state3(TestRecord[a: nil]), do: new_state(:anil)
+      impcast test_pattern_state3(_), do: new_state(:a1)
     end
   end
   
