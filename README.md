@@ -9,8 +9,8 @@ __Warning__: not thoroughly tested, use at your own risk.
     import ExActor.Functional
     
     actor Actor do
-      defcast inc(state, x) do new_state(state + x) end
-      defcall get(state) do state end
+      defcast inc(state, x), do: new_state(state + x)
+      defcall get(state), do: state
     end
     
     act = Actor.start(1)
@@ -21,13 +21,16 @@ __Warning__: not thoroughly tested, use at your own risk.
     
 ## "Objectified" style
 
-    require Objectify
     import ExActor.Objectified
     
     actor Actor do
-      defcast inc(state, x) do new_state(state + x) end
-      defcall get(state) do state end
+      defcast inc(state, x), do: new_state(state + x)
+      defcall get(state), do: state
     end
+    
+    ...
+    
+    require Objectify
     
     Objectify.transform do
       act = Actor.start(1)
@@ -45,23 +48,22 @@ __Warning__: not thoroughly tested, use at your own risk.
 
 ## Handling of return values
 
-    defcall a(state) do 5 end                 # doesn't change state
-    defcall b(state) do reply(5, 6) end       # responds 5, sets new state to 6
+    defcall a(state), do: 5                         # responds 5, doesn't change state
+    defcall b(state), do: reply(5, 6)               # responds 5, sets new state to 6
+    defcall c(_), do: {:reply, response, newstate}  # standard gen_server response is left intact
     
-    defcast c(_) do :ok end                   # doesn't change state
-    defcast d(_) do new_state(:ok) end        # sets new state
+    defcast c(_), do: :ok                   # ignores response, doesn't change state
+    defcast d(_), do: new_state(:ok)        # sets new state
+    defcast f(_), do: {:noreply, newstate}  # standard gen_server response is left intact
     
-    def init(arg) do initial_state(arg) end   # sets initial state
-    
-    # standard gen_server:call/cast responses are left intact:
-    defcall e(_) do {:reply, response, newstate} end
-    defcast f(_) do {:noreply, newstate} end
+    def init(arg), do: initial_state(arg)   # sets initial state
+    def init(arg), do: {:ok, arg}           # standard gen_server response    
 
 ## Explicit call/cast
 
     actor Actor do
-      defcast inc(state, x) do new_state(state + x) end
-      defcall get(state) do state end
+      defcast inc(state, x), do: new_state(state + x)
+      defcall get(state), do: state
     end
 
     act.cast({:inc, 1})
@@ -70,23 +72,23 @@ __Warning__: not thoroughly tested, use at your own risk.
 ## Custom call/cast handlers
 
     actor Actor do
-      defcast inc(state, x) do new_state(state + x) end
-      defcall get(state) do state end
+      defcast inc(state, x), do: new_state(state + x)
+      defcall get(state), do: state
       
-      def handle_call(:custom_call, _from, state) do ... end
-      def handle_cast(:custom_cast, state) do ... end
+      def handle_call(:custom_call, _from, state), do: ... 
+      def handle_cast(:custom_cast, state), do: ...
     end
     
 ## Pattern match on args
 
     actor Actor do
-      defcast set(state, 1) do new_state(:one) end
-      defcast set(state, 2) do new_state(:two) end
+      defcast set(state, 1), do: new_state(:one)
+      defcast set(state, 2), do: new_state(:two)
     end
 
 ## Pattern match on state
 
     actor Actor do
-      defcall get(1) do :one end
-      impcall get(2) do :two end
+      defcall get(1), do: :one
+      impcall get(2), do: :two
     end
