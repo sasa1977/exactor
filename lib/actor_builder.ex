@@ -77,10 +77,10 @@ defmodule ActorBuilder do
     handler_body = opts[:do]
     
     opts = (opts />
-      List.keydelete(:state, 0) />
-      List.keydelete(:do, 0)
-      ) ++ [state: state_arg, do: wrap_handler_body(response_wrapper, state_identifier, handler_body)]
-
+      Keyword.put(:state, state_arg) />
+      Keyword.put(:do, wrap_handler_body(response_wrapper, state_identifier, handler_body))
+    )
+    
     {macro, line, [args, opts]}
   end
   
