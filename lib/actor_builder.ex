@@ -1,18 +1,13 @@
 defmodule ActorBuilder do
-  def common_interface_funs do
-    quote do
-      def start do start(nil) end
-    end
-  end
-  
   def pure_actor_interface_funs do
     quote do
+      def start do start(nil) end
+      
       def start(initial_state) do
-        {:ok, pid} = :gen_server.start(__MODULE__, initial_state, [])
-        pid
+        :gen_server.start(__MODULE__, initial_state, [])
       end
-
-      unquote(common_interface_funs)
+      
+      defoverridable start: 1
     end
   end
   
@@ -20,15 +15,18 @@ defmodule ActorBuilder do
     quote do
       require Objectify
       
+      unquote(pure_actor_interface_funs)
+      
       def start(initial_state) do
-        {:ok, pid} = :gen_server.start(__MODULE__, initial_state, [])
-        instance(pid)
+        decorate(super)
       end
+      defoverridable start: 1
       
       def this do instance(self) end
       defp instance(pid) do Objectify.wrap(__MODULE__, pid) end
       
-      unquote(common_interface_funs)
+      defp decorate({:ok, response}), do: {:ok, instance(response)}
+      defp decorate(any), do: any
     end
   end
   

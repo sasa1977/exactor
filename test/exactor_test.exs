@@ -52,7 +52,7 @@ defmodule ExActor.Test do
   test "functional actor" do
     alias Functional.Actor, as: FunAct
     
-    actor = FunAct.start(1)
+    {:ok, actor} = FunAct.start(1)
     assert FunAct.get(actor) == 1
     
     FunAct.set(actor, 2)
@@ -81,7 +81,7 @@ defmodule ExActor.Test do
   
   test "objectified actor" do
     Objectify.transform do
-      actor = Objectified.Actor.start(0)
+      {:ok, actor} = Objectified.Actor.start(0)
       assert actor.get == 0
       
       actor.set(4)
