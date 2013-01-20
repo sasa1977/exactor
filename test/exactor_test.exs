@@ -41,6 +41,21 @@ defmodule ExActor.Test do
     import ExActor.Functional
     
     actor Actor do
+      defcast set(x), do: new_state(x)
+      defcall get, state: state, do: {:reply, state, state}
+    end
+  end
+  
+  test "functional actor" do
+    actor = Functional.Actor.start(1)
+    assert Functional.Actor.get(actor) == 1
+  end
+  
+  '''
+  defmodule Functional do
+    import ExActor.Functional
+    
+    actor Actor do
       defcast set(_, x), do: new_state(x)
       defcall get(state), do: state
       defcast leave_state(_), do: 0
@@ -172,4 +187,5 @@ defmodule ExActor.Test do
       assert actor.set(PatternMatching.TestRecord.new(a: 1)).test_pattern_state3.get == :a1
     end
   end
+  '''
 end

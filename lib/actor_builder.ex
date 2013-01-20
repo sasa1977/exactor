@@ -55,107 +55,36 @@ defmodule ActorBuilder do
   
   # root of transformation
   def transform({:__block__, line, main_block}) do
-    {actor_definitions, rest} = get_actor_definitions(main_block)
-    
-    rest = [
+    main_block = [
       (quote do
         use GenServer.Behaviour
+        import GenX.GenServer
         import ExActor.Privates
       end) | 
-      rest ++ generate_actor_funs(actor_definitions)
+      do_transform(main_block)
     ]
 
-    {:__block__, line, rest}
+    {:__block__, line, main_block}
   end
-  
+
   def transform(tuple) when is_tuple(tuple) do
     # transform of a single clause block
     transform({:__block__, elem(tuple, 1), [tuple]})
   end
-  
+
   def transform(any) do any end
   
-  def get_actor_definitions(clauses) do
-    Enum.partition(clauses, function(:actor_fun_def?, 1))
+  defp do_transform(list) when is_list(list) do
+    lc element inlist list do do_transform(element) end
   end
   
-  defp actor_fun_def?({:defcall, _, _}) do true end
-  defp actor_fun_def?({:defcast, _, _}) do true end
-  defp actor_fun_def?({:impcall, _, _}) do true end
-  defp actor_fun_def?({:impcast, _, _}) do true end
-  defp actor_fun_def?({:def, _, [{:handle_call, _, _}, _]}) do true end
-  defp actor_fun_def?({:def, _, [{:handle_cast, _, _}, _]}) do true end
-  defp actor_fun_def?(_) do false end
-  
-  defp generate_actor_funs(actor_definitions) do
-    make_funs_definitions(actor_definitions) /> 
-    flatten_definitions
+  defp do_transform(tuple) when is_tuple(tuple) do
+    transform_tuple(tuple)
   end
   
-  def flatten_definitions(groupped_definitions) do
-    :dict.fold(
-      fn(_, defs, acc) -> acc ++ defs end, 
-      [], groupped_definitions
-    )
-  end
+  defp do_transform(any) do any end
   
-  def make_funs_definitions(actor_definitions) do
-    List.foldr(actor_definitions, :dict.new(), fn(actor_definition, acc) ->
-      implement_funs(acc, actor_definition)
-    end)
-  end
-  
-  def implement_funs(acc, {:def, _, _} = pure_fun) do
-    add_definition(acc, pure_fun)
-  end
-  
-  def implement_funs(acc, {:impcall, _, _} = actor_definition) do
-    add_definition(acc, implementation_fun(setelem(actor_definition, 0, :defcall)))
-  end
-  
-  def implement_funs(acc, {:impcast, _, _} = actor_definition) do
-    add_definition(acc, implementation_fun(setelem(actor_definition, 0, :defcast)))
-  end
-  
-  def implement_funs(acc, actor_definition) do
-    acc /> 
-    add_definition(interface_fun(actor_definition)) />
-    add_definition(implementation_fun(actor_definition))
-  end
-  
-  def add_definition(groupped_defs, definition) do
-    :dict.update(fun_name(definition), 
-      fn(olddefs) -> [definition | olddefs] end,
-      [definition],
-      groupped_defs
-    )
-  end
-  
-  defp fun_name({:def, _, [{name, _, _}, _]}) do
-    name
-  end
-  
-  defp interface_fun({:defcall, _, _} = spec) do
-    make_interface_fun(:call, spec)
-  end
-  
-  defp interface_fun({:defcast, _, _} = spec) do
-    make_interface_fun(:cast, spec)
-  end
-  
-  # Generates interface fun which will be used as a wrapper for sending message to the actor
-  defp make_interface_fun(gen_server_op, {_, line, [{fun_name, _, args}, _]}) do
-    [_state_arg | impl_args] = args
-    final_args = [{:server, line, nil} | impl_args]
-    
-    def_fun(fun_name, line, final_args, quote do
-      actor_invoke(
-        unquote({:server, line, nil}), 
-        unquote(gen_server_op),
-        {unquote(fun_name), unquote_splicing(impl_args)}
-      )
-    end)
-  end
+  defp transform_tuple(tuple) do list_to_tuple(do_transform(tuple_to_list(tuple))) end
   
   # Generation of a handle_call clause
   defp implementation_fun({:defcall, line, [{fun_name, _, args}, [do: body]]}) do
