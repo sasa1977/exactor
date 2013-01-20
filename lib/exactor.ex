@@ -8,9 +8,9 @@ defmodule ExActor do
       import ExActor.Functional
     
       actor Calculator do
-        defcast inc(state, x) do new_state(state + x) end
-        defcast dec(state, x) do new_state(state - x) end
-        defcall get(state) do state end
+        defcast inc(x), state: state, do: new_state(state + x)
+        defcast dec(x), state: state, do: new_state(state - x)
+        defcall get, state: state, do: state
       end
     
       calculator = Calculator.start(0)
@@ -40,9 +40,9 @@ defmodule ExActor do
       import ExActor.Objectified
 
       actor Calculator do
-        defcast inc(state, x) do new_state(state + x) end
-        defcast dec(state, x) do new_state(state - x) end
-        defcall get(state) do state end
+        defcast inc(x), state: state, do: new_state(state + x)
+        defcast dec(x), state: state, do: new_state(state - x)
+        defcall get, state: state, do: state
       end
 
       Objectify.transform do
