@@ -12,7 +12,7 @@ defmodule ExActor.Test do
       Objectify.wrap(ExActor.Test.Calculator, value + 1)
     end
     
-    def get(value) do value end
+    def get(value) do value end    
   end
 
   defrecord Tr, a: nil
@@ -74,7 +74,7 @@ defmodule ExActor.Test do
     actor Actor do
       defcast set(x), do: new_state(x)
       defcast inc(x), state: value, do: new_state(value + x)
-      defcast dec(x), state:value, do: new_state(value - x)
+      defcast dec(x), state: value, do: new_state(value - x)
       defcall get, state: value, do: value
     end
   end
