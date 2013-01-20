@@ -42,50 +42,33 @@ defmodule ExActor.Test do
     
     actor Actor do
       defcast set(x), do: new_state(x)
-      defcall get, state: state, do: {:reply, state, state}
+      defcall get, state: state, do: state
+      defcall reply_leave_state, do: 3
+      defcast leave_state, do: 4
+      defcall full_reply, do: reply(5,6)
     end
   end
   
   test "functional actor" do
-    actor = Functional.Actor.start(1)
-    assert Functional.Actor.get(actor) == 1
+    alias Functional.Actor, as: FunAct
+    
+    actor = FunAct.start(1)
+    assert FunAct.get(actor) == 1
+    
+    FunAct.set(actor, 2)
+    assert FunAct.get(actor) == 2
+    
+    assert FunAct.reply_leave_state(actor) == 3
+    assert FunAct.get(actor) == 2
+    
+    FunAct.leave_state(actor)
+    assert FunAct.get(actor) == 2
+    
+    assert FunAct.full_reply(actor) == 5
+    assert FunAct.get(actor) == 6
   end
   
   '''
-  defmodule Functional do
-    import ExActor.Functional
-    
-    actor Actor do
-      defcast set(_, x), do: new_state(x)
-      defcall get(state), do: state
-      defcast leave_state(_), do: 0
-      defcall reply_leave_state(_), do: 0
-      defcall full_reply(_), do: reply(1,2)
-    end
-  end
-  
-  test "functional actor" do
-    actor = Functional.Actor.start(1)
-    assert Functional.Actor.get(actor) == 1
-    
-    Functional.Actor.set(actor, 2)
-    assert Functional.Actor.get(actor) == 2
-    
-    Functional.Actor.cast(actor, {:set, 3})
-    assert Functional.Actor.call(actor, {:get}) == 3
-    
-    Functional.Actor.leave_state(actor)
-    assert Functional.Actor.get(actor) == 3
-    
-    assert Functional.Actor.reply_leave_state(actor) == 0
-    assert Functional.Actor.get(actor) == 3
-    
-    assert Functional.Actor.full_reply(actor) == 1
-    assert Functional.Actor.get(actor) == 2
-  end
-  
-  
-  
   defmodule Objectified do
     import ExActor.Objectified
     
