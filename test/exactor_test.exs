@@ -68,6 +68,31 @@ defmodule ExActor.Test do
     assert FunAct.get(actor) == 6
   end
   
+  defmodule Objectified do
+    import ExActor.Objectified
+    
+    actor Actor do
+      defcast set(x), do: new_state(x)
+      defcast inc(x), state: value, do: new_state(value + x)
+      defcast dec(x), state:value, do: new_state(value - x)
+      defcall get, state: value, do: value
+    end
+  end
+  
+  test "objectified actor" do
+    Objectify.transform do
+      actor = Objectified.Actor.start(0)
+      assert actor.get == 0
+      
+      actor.set(4)
+      assert actor.get == 4
+      
+      actor.inc(10)
+      actor.dec(3)
+      assert actor.get == 11
+    end
+  end
+  
   '''
   defmodule Objectified do
     import ExActor.Objectified
