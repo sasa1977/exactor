@@ -13,7 +13,7 @@ defmodule ExActor do
         defcall get, state: state, do: state
       end
     
-      calculator = Calculator.start(0)
+      {:ok, calculator} = Calculator.start(0)
       Calculator.inc(calculator, 10)
       Calculator.dec(calculator, 5)
       IO.puts(Calculator.get(calculator))
@@ -46,7 +46,7 @@ defmodule ExActor do
       end
 
       Objectify.transform do
-        actor = Calculator.start(0)
+        {:ok, actor} = Calculator.start(0)
         actor.inc(10)
         actor.dec(5)
         IO.puts(actor.get)

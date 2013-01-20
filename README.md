@@ -15,10 +15,10 @@ __Warning__: not thoroughly tested, use at your own risk.
       defcall get, state: state, do: state
     end
     
-    act = Actor.start(1)
+    {:ok, act} = Actor.start(1)
     Actor.get(act)         # 1
     
-    Actor.inc(act, 2)      # this is gen_server:cast
+    Actor.inc(act, 2)
     Actor.get(act)         # 3
     
 ## "Objectified" style
@@ -35,7 +35,7 @@ __Warning__: not thoroughly tested, use at your own risk.
     require Objectify
     
     Objectify.transform do
-      act = Actor.start(1)
+      {:ok, act} = Actor.start(1)
       act.get                 # 1
     
       act.inc(2)
@@ -55,12 +55,12 @@ __Warning__: not thoroughly tested, use at your own risk.
     def init(arg), do: initial_state(arg)         # sets initial state
     def init(arg), do: {:ok, arg}                 # standard gen_server response    
     
-## Custom call/cast handlers
+## Simplified starting
 
-    actor Actor do
-      defcast inc(x), state: state, do: new_state(state + x)
-      defcall get, state: state, do: state
-      
-      def handle_call(:custom_call, _from, state), do: ... 
-      def handle_cast(:custom_cast, state), do: ...
-    end
+    Actor.start         # same as Actor.start(nil)
+    Actor.start(args)
+    Actor.start(args, options)
+    
+    Actor.start_link
+    Actor.start_link(args)
+    Actor.startLink(args, options)
