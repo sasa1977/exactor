@@ -68,6 +68,28 @@ defmodule ExActor.Test do
     assert FunAct.get(actor) == 6
   end
   
+  test "starting" do
+    alias Functional.Actor, as: FunAct
+    
+    {:ok, actor} = FunAct.start
+    assert FunAct.get(actor) == nil
+    
+    {:ok, actor} = FunAct.start(1)
+    assert FunAct.get(actor) == 1
+    
+    {:ok, actor} = FunAct.start(1, [])
+    assert FunAct.get(actor) == 1
+    
+    {:ok, actor} = FunAct.start_link
+    assert FunAct.get(actor) == nil
+    
+    {:ok, actor} = FunAct.start_link(1)
+    assert FunAct.get(actor) == 1
+    
+    {:ok, actor} = FunAct.start_link(1, [])
+    assert FunAct.get(actor) == 1
+  end
+  
   defmodule Objectified do
     import ExActor.Objectified
     

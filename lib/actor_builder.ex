@@ -1,26 +1,29 @@
 defmodule ActorBuilder do
   def pure_actor_interface_funs do
     quote do
-      def start do start(nil) end
+      def start, do: start(nil)
+      def start(args), do: start(args, [])
+      def start(args, options), do: :gen_server.start(__MODULE__, args, options)
+      defoverridable start: 2
       
-      def start(initial_state) do
-        :gen_server.start(__MODULE__, initial_state, [])
-      end
+      def start_link, do: start_link(nil)
+      def start_link(args), do: start_link(args, [])
+      def start_link(args, options), do: :gen_server.start_link(__MODULE__, args, options)
       
-      defoverridable start: 1
+      defoverridable start_link: 2
     end
   end
   
   def objectified_actor_interface_funs do
     quote do
       require Objectify
-      
       unquote(pure_actor_interface_funs)
       
-      def start(initial_state) do
-        decorate(super)
-      end
+      def start(args, options), do: decorate(super)
       defoverridable start: 1
+      
+      def start_link(args, options), do: decorate(super)
+      defoverridable start_link: 1
       
       def this do instance(self) end
       defp instance(pid) do Objectify.wrap(__MODULE__, pid) end
