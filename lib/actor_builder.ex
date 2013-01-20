@@ -54,8 +54,16 @@ defmodule ActorBuilder do
 
   def transform(any) do any end
   
+  defp transform_body({:defcall, line, [fun, opts, body]}) do
+    handle_genx_macro(:defcall, :handle_call_response, line, fun, opts ++ body)
+  end
+  
   defp transform_body({:defcall, line, [args, opts]}) do
     handle_genx_macro(:defcall, :handle_call_response, line, args, opts)
+  end
+  
+  defp transform_body({:defcast, line, [fun, opts, body]}) do
+    handle_genx_macro(:defcast, :handle_cast_response, line, fun, opts ++ body)
   end
   
   defp transform_body({:defcast, line, [args, opts]}) do
