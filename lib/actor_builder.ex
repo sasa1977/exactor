@@ -26,7 +26,7 @@ defmodule ActorBuilder do
         decorate_start_response(:gen_server.start_link(__MODULE__, args, options))
       end
       
-      def this do: instance(self)
+      def this, do: instance(self)
       defp instance(pid), do: Objectify.wrap(__MODULE__, pid)
       
       defp decorate_start_response({:ok, response}), do: {:ok, instance(response)}
