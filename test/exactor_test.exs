@@ -2,6 +2,7 @@ require Objectify
 
 defmodule ExActor.Test do
   use ExUnit.Case 
+  import ExActor
   
   defmodule Calculator do
     def new(value) do
@@ -37,73 +38,61 @@ defmodule ExActor.Test do
     end
   end
   
-  defmodule Functional do
-    import ExActor.Functional
-    
-    actor Actor do
-      defcast set(x), do: new_state(x)
-      defcall get, state: state, do: state
-      defcall reply_leave_state, do: 3
-      defcast leave_state, do: 4
-      defcall full_reply, do: reply(5,6)
-    end
+  actor FunActor do
+    defcast set(x), do: new_state(x)
+    defcall get, state: state, do: state
+    defcall reply_leave_state, do: 3
+    defcast leave_state, do: 4
+    defcall full_reply, do: reply(5,6)
   end
   
-  test "functional actor" do
-    alias Functional.Actor, as: FunAct
+  test "functional actor" do    
+    {:ok, actor} = FunActor.start(1)
+    assert FunActor.get(actor) == 1
     
-    {:ok, actor} = FunAct.start(1)
-    assert FunAct.get(actor) == 1
+    FunActor.set(actor, 2)
+    assert FunActor.get(actor) == 2
     
-    FunAct.set(actor, 2)
-    assert FunAct.get(actor) == 2
+    assert FunActor.reply_leave_state(actor) == 3
+    assert FunActor.get(actor) == 2
     
-    assert FunAct.reply_leave_state(actor) == 3
-    assert FunAct.get(actor) == 2
+    FunActor.leave_state(actor)
+    assert FunActor.get(actor) == 2
     
-    FunAct.leave_state(actor)
-    assert FunAct.get(actor) == 2
-    
-    assert FunAct.full_reply(actor) == 5
-    assert FunAct.get(actor) == 6
+    assert FunActor.full_reply(actor) == 5
+    assert FunActor.get(actor) == 6
   end
   
-  test "starting" do
-    alias Functional.Actor, as: FunAct
+  test "functional starting" do
+    {:ok, actor} = FunActor.start
+    assert FunActor.get(actor) == nil
     
-    {:ok, actor} = FunAct.start
-    assert FunAct.get(actor) == nil
+    {:ok, actor} = FunActor.start(1)
+    assert FunActor.get(actor) == 1
     
-    {:ok, actor} = FunAct.start(1)
-    assert FunAct.get(actor) == 1
+    {:ok, actor} = FunActor.start(1, [])
+    assert FunActor.get(actor) == 1
     
-    {:ok, actor} = FunAct.start(1, [])
-    assert FunAct.get(actor) == 1
+    {:ok, actor} = FunActor.start_link
+    assert FunActor.get(actor) == nil
     
-    {:ok, actor} = FunAct.start_link
-    assert FunAct.get(actor) == nil
+    {:ok, actor} = FunActor.start_link(1)
+    assert FunActor.get(actor) == 1
     
-    {:ok, actor} = FunAct.start_link(1)
-    assert FunAct.get(actor) == 1
-    
-    {:ok, actor} = FunAct.start_link(1, [])
-    assert FunAct.get(actor) == 1
+    {:ok, actor} = FunActor.start_link(1, [])
+    assert FunActor.get(actor) == 1
   end
   
-  defmodule Objectified do
-    import ExActor.Objectified
-    
-    actor Actor do
-      defcast set(x), do: new_state(x)
-      defcast inc(x), state: value, do: new_state(value + x)
-      defcast dec(x), state: value, do: new_state(value - x)
-      defcall get, state: value, do: value
-    end
+  actor ObjActor do
+    defcast set(x), do: new_state(x)
+    defcast inc(x), state: value, do: new_state(value + x)
+    defcast dec(x), state: value, do: new_state(value - x)
+    defcall get, state: value, do: value
   end
   
   test "objectified actor" do
     Objectify.transform do
-      {:ok, actor} = Objectified.Actor.start(0)
+      {:ok, actor} = ObjActor.new(0)
       assert actor.get == 0
       
       actor.set(4)
@@ -112,6 +101,18 @@ defmodule ExActor.Test do
       actor.inc(10)
       actor.dec(3)
       assert actor.get == 11
+    end
+  end
+  
+  test "objectified starting" do
+    Objectify.transform do
+      assert elem(ObjActor.new, 1).get == nil
+      assert elem(ObjActor.new(1), 1).get == 1
+      assert elem(ObjActor.new(1, []), 1).get == 1
+      
+      assert elem(ObjActor.new_link, 1).get == nil
+      assert elem(ObjActor.new_link(1), 1).get == 1
+      assert elem(ObjActor.new_link(1, []), 1).get == 1
     end
   end
 end

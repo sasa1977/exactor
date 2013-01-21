@@ -1,35 +1,36 @@
 defmodule ActorBuilder do
-  def pure_actor_interface_funs do
+  def interface_funs do
     quote do
       def start, do: start(nil)
       def start(args), do: start(args, [])
-      def start(args, options), do: :gen_server.start(__MODULE__, args, options)
-      defoverridable start: 2
+      def start(args, options) do
+        :gen_server.start(__MODULE__, args, options)
+      end
       
       def start_link, do: start_link(nil)
       def start_link(args), do: start_link(args, [])
-      def start_link(args, options), do: :gen_server.start_link(__MODULE__, args, options)
+      def start_link(args, options) do
+        :gen_server.start_link(__MODULE__, args, options)
+      end
       
-      defoverridable start_link: 2
-    end
-  end
-  
-  def objectified_actor_interface_funs do
-    quote do
-      require Objectify
-      unquote(pure_actor_interface_funs)
+      # objectify helpers
+      def new, do: new(nil)
+      def new(args), do: new(args, [])
+      def new(args, options) do
+        decorate_start_response(:gen_server.start(__MODULE__, args, options))
+      end
       
-      def start(args, options), do: decorate(super)
-      defoverridable start: 1
+      def new_link, do: new_link(nil)
+      def new_link(args), do: new_link(args, [])
+      def new_link(args, options) do
+        decorate_start_response(:gen_server.start_link(__MODULE__, args, options))
+      end
       
-      def start_link(args, options), do: decorate(super)
-      defoverridable start_link: 1
+      def this do: instance(self)
+      defp instance(pid), do: Objectify.wrap(__MODULE__, pid)
       
-      def this do instance(self) end
-      defp instance(pid) do Objectify.wrap(__MODULE__, pid) end
-      
-      defp decorate({:ok, response}), do: {:ok, instance(response)}
-      defp decorate(any), do: any
+      defp decorate_start_response({:ok, response}), do: {:ok, instance(response)}
+      defp decorate_start_response(any), do: any
     end
   end
   
@@ -40,6 +41,8 @@ defmodule ActorBuilder do
         use GenServer.Behaviour
         import GenX.GenServer
         import ExActor.Privates
+        
+        unquote(interface_funs)
       end) | 
       transform_body(main_block)
     ]

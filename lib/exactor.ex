@@ -1,66 +1,27 @@
 defmodule ExActor do
-  defmodule Functional do
-    @moduledoc """
-    Provides syntactic sugar for defining and creating actors.
-    Note: this code is built for demonstration purposes only. Do not use it in production.
+  @moduledoc """
+  Provides syntactic sugar for defining and creating actors.
+  Note: this code is built for demonstration purposes only. Do not use it in production.
+
+  Examples:
+    import ExActor.Functional
   
-    Examples:
-      import ExActor.Functional
-    
-      actor Calculator do
-        defcast inc(x), state: state, do: new_state(state + x)
-        defcast dec(x), state: state, do: new_state(state - x)
-        defcall get, state: state, do: state
-      end
-    
-      {:ok, calculator} = Calculator.start(0)
-      Calculator.inc(calculator, 10)
-      Calculator.dec(calculator, 5)
-      IO.puts(Calculator.get(calculator))
-    """
-  
-    import ActorBuilder
-  
-    defmacro actor(name, [do: definition]) do
-      quote do
-        defmodule unquote(name) do
-          unquote(pure_actor_interface_funs)
-          unquote(transform(definition))
-        end
-      end
+    actor Calculator do
+      defcast inc(x), state: state, do: new_state(state + x)
+      defcast dec(x), state: state, do: new_state(state - x)
+      defcall get, state: state, do: state
     end
-  end
   
-  defmodule Objectified do
-    @moduledoc """
-    Provides syntactic sugar for defining and creating objectify friendly actors.
-    Note: this code is built for demonstration purposes only. Do not use it in production.
+    {:ok, calculator} = Calculator.start(0)
+    Calculator.inc(calculator, 10)
+    Calculator.dec(calculator, 5)
+    IO.puts(Calculator.get(calculator))
+  """
 
-    Examples:
-      import ExActor.Objectified
-
-      actor Calculator do
-        defcast inc(x), state: state, do: new_state(state + x)
-        defcast dec(x), state: state, do: new_state(state - x)
-        defcall get, state: state, do: state
-      end
-
-      Objectify.transform do
-        {:ok, actor} = Calculator.start(0)
-        actor.inc(10)
-        actor.dec(5)
-        IO.puts(actor.get)
-      end
-    """
-    
-    import ActorBuilder
-  
-    defmacro actor(name, [do: definition]) do
-      quote do
-        defmodule unquote(name) do
-          unquote(objectified_actor_interface_funs)
-          unquote(transform(definition))
-        end
+  defmacro actor(name, [do: definition]) do
+    quote do
+      defmodule unquote(name) do
+        unquote(ActorBuilder.transform(definition))
       end
     end
   end

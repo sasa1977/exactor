@@ -8,7 +8,7 @@ __Warning__: not thoroughly tested, use at your own risk.
 # Examples
 
 ## Functional style
-    import ExActor.Functional
+    import ExActor
     
     actor Actor do
       defcast inc(x), state: state, do: new_state(state + x)
@@ -22,20 +22,10 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.get(act)         # 3
     
 ## "Objectified" style
-
-    import ExActor.Objectified
-    
-    actor Actor do
-      defcast inc(x), state: state, do: new_state(state + x)
-      defcall get, state: state, do: state
-    end
-    
-    ...
-    
     require Objectify
     
     Objectify.transform do
-      {:ok, act} = Actor.start(1)
+      {:ok, act} = Actor.new(1)
       act.get                 # 1
     
       act.inc(2)
@@ -56,7 +46,8 @@ __Warning__: not thoroughly tested, use at your own risk.
     def init(arg), do: {:ok, arg}                 # standard gen_server response    
     
 ## Simplified starting
-
+    
+    # functional:
     Actor.start         # same as Actor.start(nil)
     Actor.start(args)
     Actor.start(args, options)
@@ -64,3 +55,7 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.start_link
     Actor.start_link(args)
     Actor.startLink(args, options)
+    
+    #objectified:
+    Actor.new       # like start
+    Actor.new_link  # like start_link
