@@ -1,41 +1,33 @@
-require Objectify
+import Objectify
 
-defmodule ExActor.Test do
+defmodule_o ExActor.Test do
   use ExUnit.Case 
   import ExActor
   
   defmodule Calculator do
-    def new(value) do
-      Objectify.wrap(ExActor.Test.Calculator, value)
-    end
-    
-    def inc(value) do
-      Objectify.wrap(ExActor.Test.Calculator, value + 1)
-    end
-    
+    def_o new(value), do: value  
+    def_o inc(value), do: value + 1
     def get(value) do value end    
   end
 
   defrecord Tr, a: nil
   test "objectify" do 
-    Objectify.transform do
-      # plain old call
-      assert List.last([1,2,3]) == 3
-      
-      # inline call
-      assert Objectify.wrap(List, [1,2,3]).last === 3
-      
-      # variable call
-      a = Objectify.wrap(List, [1,2,3])
-      assert a.last === 3
-      
-      # chain call
-      assert 2 == Calculator.new(0).inc.inc.get
-      
-      # In early versions I had problems with record pattern matching, so I test this as well, even
-      # if it is not directly related to objectify
-      Tr[a: 1] = Tr.new(a: 1)
-    end
+    # plain old call
+    assert List.last([1,2,3]) == 3
+    
+    # inline call
+    assert Objectify.wrap(List, [1,2,3]).last === 3
+    
+    # variable call
+    a = Objectify.wrap(List, [1,2,3])
+    assert a.last === 3
+    
+    # chain call
+    assert 2 == Calculator.new(0).inc.inc.get
+    
+    # In early versions I had problems with record pattern matching, so I test this as well, even
+    # if it is not directly related to objectify
+    Tr[a: 1] = Tr.new(a: 1)
   end
   
   actor FunActor do
@@ -91,28 +83,24 @@ defmodule ExActor.Test do
   end
   
   test "objectified actor" do
-    Objectify.transform do
-      {:ok, actor} = ObjActor.new(0)
-      assert actor.get == 0
-      
-      actor.set(4)
-      assert actor.get == 4
-      
-      actor.inc(10)
-      actor.dec(3)
-      assert actor.get == 11
-    end
+    {:ok, actor} = ObjActor.new(0)
+    assert actor.get == 0
+    
+    actor.set(4)
+    assert actor.get == 4
+    
+    actor.inc(10)
+    actor.dec(3)
+    assert actor.get == 11
   end
   
   test "objectified starting" do
-    Objectify.transform do
-      assert elem(ObjActor.new, 1).get == nil
-      assert elem(ObjActor.new(1), 1).get == 1
-      assert elem(ObjActor.new(1, []), 1).get == 1
-      
-      assert elem(ObjActor.new_link, 1).get == nil
-      assert elem(ObjActor.new_link(1), 1).get == 1
-      assert elem(ObjActor.new_link(1, []), 1).get == 1
-    end
+    assert elem(ObjActor.new, 1).get == nil
+    assert elem(ObjActor.new(1), 1).get == 1
+    assert elem(ObjActor.new(1, []), 1).get == 1
+    
+    assert elem(ObjActor.new_link, 1).get == nil
+    assert elem(ObjActor.new_link(1), 1).get == 1
+    assert elem(ObjActor.new_link(1, []), 1).get == 1
   end
 end
