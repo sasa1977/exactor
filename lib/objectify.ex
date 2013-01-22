@@ -60,22 +60,12 @@ defmodule Objectify do
   def unwrap({:__objectified__, _, instance}), do: instance
   
     
-  defmacro def_o(decl, body), do: implement(decl, body)
-  
-  defp implement({name, line, nil}, body), do: implement({name, line, []}, body)
-  defp implement({name, _, args}, [do: body]) do
-    quote do
-      def unquote(name)(unquote_splicing(args)) do
-        Objectify.wrap(__MODULE__, unquote(body))
-      end
-    end
-  end
-  
-  
   defmacro defmodule_o(name, [do: definition]) do
     quote do
       defmodule unquote(name) do
         Objectify.transform do
+          def _new(value), do: Objectify.wrap(__MODULE__, value)
+          
           unquote(definition)
         end
       end

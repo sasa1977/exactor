@@ -4,9 +4,9 @@ defmodule_o ExActor.Test do
   use ExUnit.Case 
   import ExActor
   
-  defmodule Calculator do
-    def_o new(value), do: value  
-    def_o inc(value), do: value + 1
+  defmodule_o Calculator do
+    def new(value), do: _new(value)
+    def inc(value), do: _new(value + 1)
     def get(value) do value end    
   end
 
