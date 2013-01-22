@@ -26,6 +26,16 @@ defmodule ExActor do
     end
   end
   
+  defmacro actor_o(name, [do: definition]) do
+    quote do
+      Objectify.transform do
+        actor unquote(name) do
+          unquote(definition)
+        end
+      end
+    end
+  end
+  
   defmodule Privates do
     def reply(response, new_state) do {:reply, response, new_state} end
     def initial_state(state) do {:ok, state} end
