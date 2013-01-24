@@ -14,9 +14,9 @@ defmodule Objectify do
     do_transform(block)
   end
   
-  defp do_transform({{:., _, [left, right]}, _, args} = expr) do
+  defp do_transform({{:., line, [left, right]}, _, args} = expr) do
     case should_wrap(left) do
-      true -> wrap_call(left, right, args)
+      true -> wrap_call(line, left, right, args)
       false -> transform_tuple(expr)
     end
   end
@@ -38,14 +38,12 @@ defmodule Objectify do
   defp should_wrap({mod, _, _}) when is_atom(mod) do true end   # variable call
   defp should_wrap(_other) do false end
   
-  def wrap_call(left, right, args) do
-    quote do
-      Objectify.object_invoke(
-        unquote(do_transform(left)), 
-        unquote(do_transform(right)), 
-        unquote(do_transform(args))
-      )
-    end
+  def wrap_call(line, left, right, args) do
+    {
+      {:., line, [{:__aliases__,0,[:Objectify]},:object_invoke]}, 
+      line,
+      [do_transform(left), do_transform(right), do_transform(args)]
+    }
   end
   
   def object_invoke({:__objectified__, module, instance}, method, args) do
