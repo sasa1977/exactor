@@ -90,8 +90,8 @@ defmodule ActorBuilder do
     {state_arg, state_identifier} = get_state_identifier(line, opts[:state] || {:_, line, :quoted})
     handler_body = opts[:do]
     
-    opts = (opts />
-      Keyword.put(:state, state_arg) />
+    opts = (opts |>
+      Keyword.put(:state, state_arg) |>
       Keyword.put(:do, wrap_handler_body(response_wrapper, state_identifier, handler_body))
     )
     

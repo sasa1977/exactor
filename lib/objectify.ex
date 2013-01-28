@@ -40,7 +40,7 @@ defmodule Objectify do
   
   def wrap_call(line, left, right, args) do
     {
-      {:., line, [{:__aliases__,0,[:Objectify]},:object_invoke]}, 
+      {:., line, [{:__aliases__,[line: 0],[:Objectify]},:object_invoke]}, 
       line,
       [do_transform(left), do_transform(right), do_transform(args)]
     }
