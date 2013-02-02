@@ -128,8 +128,27 @@ defmodule ExActor do
   defmacro defactor(name, [do: definition]) do
     quote do
       defmodule unquote(name) do
+        parent = __MODULE__
         defmodule Functional do
           use ExActor
+          
+          # Dirty hack to get fully qualified parent module. Hopefully, this will not be needed 
+          # when the new version of elixir is released.
+          defmacrop parent do
+            (
+              String.split(Binary.Chars.to_binary(__MODULE__), "-") |>
+              Enum.reverse |>
+              Enum.drop(1) |>
+              Enum.reverse |> 
+              Enum.join("-") |> 
+              binary_to_atom
+            )
+          end
+          
+          def this do
+            parent.this
+          end
+          
           unquote(definition)
         end
         
@@ -153,6 +172,7 @@ defmodule ExActor do
         defp decorate_start_response(any), do: any
         
         import ExActor.ObjWrapper
+        import ExActor.Privates, only: [initial_state: 1]
         unquote(definition)
       end
     end

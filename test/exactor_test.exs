@@ -51,14 +51,18 @@ defmodule ExActor.Test do
   
   
   ExActor.defactor ObjActor do
+    def init(nil), do: initial_state(0)
+    def init(other), do: initial_state(other)
+    
     defcast set(x), do: new_state(x)
     defcast inc(x), state: value, do: new_state(value + x)
     defcast dec(x), state: value, do: new_state(value - x)
     defcall get, state: value, do: value
+    defcall me, do: this
   end
   
   test "objectified actor" do
-    {:ok, actor} = ObjActor.start(0)
+    {:ok, actor} = ObjActor.start
     
     assert is_pid(actor.pid)
     assert actor === ObjActor.actor(actor.pid)
@@ -69,14 +73,16 @@ defmodule ExActor.Test do
     assert actor.get == 4
     
     assert actor.inc(10).dec(3).get == 11
+    
+    assert actor.me == actor
   end
   
   test "objectified starting" do
-    assert elem(ObjActor.start, 1).get == nil
+    assert elem(ObjActor.start, 1).get == 0
     assert elem(ObjActor.start(1), 1).get == 1
     assert elem(ObjActor.start(1, []), 1).get == 1
     
-    assert elem(ObjActor.start_link, 1).get == nil
+    assert elem(ObjActor.start_link, 1).get == 0
     assert elem(ObjActor.start_link(1), 1).get == 1
     assert elem(ObjActor.start_link(1, []), 1).get == 1
   end
