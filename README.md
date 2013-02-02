@@ -8,9 +8,9 @@ __Warning__: not thoroughly tested, use at your own risk.
 # Examples
 
 ## Functional style
-    import ExActor
-    
-    actor Actor do
+    defmodule Actor do
+      use ExActor
+      
       defcast inc(x), state: state, do: new_state(state + x)
       defcall get, state: state, do: state
     end
@@ -21,17 +21,7 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.inc(act, 2)
     Actor.get(act)         # 3
     
-## "Objectified" style
-    require Objectify
-    
-    Objectify.transform do
-      {:ok, act} = Actor.new(1)
-      act.get                 # 1
-    
-      act.inc(2)
-      act.get                 # 3
-    end
-    
+
 ## Handling of return values
 
     defcall a, state: state, do: 5                # responds 5, doesn't change state
@@ -47,7 +37,6 @@ __Warning__: not thoroughly tested, use at your own risk.
     
 ## Simplified starting
     
-    # functional:
     Actor.start         # same as Actor.start(nil)
     Actor.start(args)
     Actor.start(args, options)
@@ -56,6 +45,29 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.start_link(args)
     Actor.startLink(args, options)
     
-    #objectified:
-    Actor.new       # like start
-    Actor.new_link  # like start_link
+## OO like actors (based on tuple modules)
+    
+    import ExActor
+    
+    defactor ObjActor do
+      defcast inc(x), state: state, do: new_state(state + x)
+      defcall get, state: state, do: state
+    end
+    
+    # start methods work as above
+    {:ok, act} = ObjActor.start(0)
+    
+    # operations can be called directly on act
+    act.inc(1)
+    
+    # cast returns the actor on which it operates, so you can chain calls
+    act.
+      inc(5).
+      inc(10).
+      get
+      
+    # OO actor to pid:
+    act.pid
+    
+    # pid to OO actor
+    ObjActor.actor(pid)

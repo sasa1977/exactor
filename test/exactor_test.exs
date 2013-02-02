@@ -1,36 +1,10 @@
-import Objectify
-
-defmodule_o ExActor.Test do
+defmodule ExActor.Test do
   use ExUnit.Case 
-  import ExActor
+  require ExActor
   
-  defmodule_o Calculator do
-    def new(value), do: _new(value)
-    def inc(value), do: _new(value + 1)
-    def get(value) do value end    
-  end
-
-  defrecord Tr, a: nil
-  test "objectify" do 
-    # plain old call
-    assert List.last([1,2,3]) == 3
+  defmodule FunActor do
+    use ExActor
     
-    # inline call
-    assert Objectify.wrap(List, [1,2,3]).last === 3
-    
-    # variable call
-    a = Objectify.wrap(List, [1,2,3])
-    assert a.last === 3
-    
-    # chain call
-    assert 2 == Calculator.new(0).inc.inc.get
-    
-    # In early versions I had problems with record pattern matching, so I test this as well, even
-    # if it is not directly related to objectify
-    Tr[a: 1] = Tr.new(a: 1)
-  end
-  
-  actor FunActor do
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: state
     defcall reply_leave_state, do: 3
@@ -75,7 +49,8 @@ defmodule_o ExActor.Test do
     assert FunActor.get(actor) == 1
   end
   
-  actor ObjActor do
+  
+  ExActor.defactor ObjActor do
     defcast set(x), do: new_state(x)
     defcast inc(x), state: value, do: new_state(value + x)
     defcast dec(x), state: value, do: new_state(value - x)
@@ -83,24 +58,26 @@ defmodule_o ExActor.Test do
   end
   
   test "objectified actor" do
-    {:ok, actor} = ObjActor.new(0)
+    {:ok, actor} = ObjActor.start(0)
+    
+    assert is_pid(actor.pid)
+    assert actor === ObjActor.actor(actor.pid)
+    
     assert actor.get == 0
     
     actor.set(4)
     assert actor.get == 4
     
-    actor.inc(10)
-    actor.dec(3)
-    assert actor.get == 11
+    assert actor.inc(10).dec(3).get == 11
   end
   
   test "objectified starting" do
-    assert elem(ObjActor.new, 1).get == nil
-    assert elem(ObjActor.new(1), 1).get == 1
-    assert elem(ObjActor.new(1, []), 1).get == 1
+    assert elem(ObjActor.start, 1).get == nil
+    assert elem(ObjActor.start(1), 1).get == 1
+    assert elem(ObjActor.start(1, []), 1).get == 1
     
-    assert elem(ObjActor.new_link, 1).get == nil
-    assert elem(ObjActor.new_link(1), 1).get == 1
-    assert elem(ObjActor.new_link(1, []), 1).get == 1
+    assert elem(ObjActor.start_link, 1).get == nil
+    assert elem(ObjActor.start_link(1), 1).get == 1
+    assert elem(ObjActor.start_link(1, []), 1).get == 1
   end
 end
