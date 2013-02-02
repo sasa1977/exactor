@@ -128,7 +128,7 @@ defmodule ExActor do
   defmacro defactor(name, [do: definition]) do
     quote do
       defmodule unquote(name) do
-        defmodule :__Impl__ do
+        defmodule Functional do
           use ExActor
           unquote(definition)
         end
@@ -136,13 +136,13 @@ defmodule ExActor do
         def start, do: start(nil)
         def start(args), do: start(args, [])
         def start(args, options) do
-          decorate_start_response(:__Impl__.start(args, options))
+          decorate_start_response(Functional.start(args, options))
         end
         
         def start_link, do: start_link(nil)
         def start_link(args), do: start_link(args, [])
         def start_link(args, options) do
-          decorate_start_response(:__Impl__.start_link(args, options))
+          decorate_start_response(Functional.start_link(args, options))
         end
         
         def this, do: actor(self)
@@ -200,7 +200,7 @@ defmodule ExActor do
     end
     
     defp delegate(name, args) do
-      quote do: :__Impl__.unquote(name)(unquote_splicing(args))
+      quote do: Functional.unquote(name)(unquote_splicing(args))
     end
   end
 end
