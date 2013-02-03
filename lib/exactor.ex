@@ -128,7 +128,6 @@ defmodule ExActor do
   defmacro defactor(name, [do: definition]) do
     quote do
       defmodule unquote(name) do
-        parent = __MODULE__
         defmodule Functional do
           use ExActor
           
@@ -145,9 +144,7 @@ defmodule ExActor do
             )
           end
           
-          def this do
-            parent.this
-          end
+          def this, do: parent.this
           
           unquote(definition)
         end
