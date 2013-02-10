@@ -1,7 +1,7 @@
 ExActor
 =======
 Macros for easier implementation and usage of gen_server based actors (processes) in Elixir.
-Built on top of [GenX](https://github.com/yrashk/genx).
+This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate and changes some semantics of the handle_call/cast responses.
 
 __Warning__: not thoroughly tested, use at your own risk.
 
@@ -47,14 +47,14 @@ __Warning__: not thoroughly tested, use at your own risk.
     
 ## OO like actors (based on tuple modules)
     
-    import ExActor
+    defmodule ObjActor do
+      use ExActor, tupmod: true
     
-    defactor ObjActor do
       defcast inc(x), state: state, do: new_state(state + x)
       defcall get, state: state, do: state
     end
     
-    # start methods work as above
+    # start methods return tuple module for direct function calling
     {:ok, act} = ObjActor.start(0)
     
     # operations can be called directly on act
@@ -71,3 +71,7 @@ __Warning__: not thoroughly tested, use at your own risk.
     
     # pid to OO actor
     ObjActor.actor(pid)
+    
+    # you can also use it in functional style
+    ObjActor.inc(act.pid, 3)
+    ObjActor.get(act.pid)

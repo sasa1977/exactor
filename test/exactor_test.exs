@@ -5,20 +5,50 @@ defmodule ExActor.Test do
   defmodule FunActor do
     use ExActor
     
+    def init({arg, register_name}) do 
+      Process.register(self, register_name)
+      initial_state(arg)
+    end
+    
+    def init(arg) do
+      super(arg)
+    end
+    
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: state
+    
+    defcast pm_set, state: 2, do: new_state(:two)
+    defcast pm_set, state: 3, do: new_state(:three)
+    
+    defcall timeout, timeout: 10, do: :timer.sleep(100)
+    
+    defcall unexported, export: false, do: :unexported
+    def my_unexported(server), do: :gen_server.call(server, :unexported)
+    
+    defcall wellknown, export: :fun_actor, do: :wellknown
+    
     defcall reply_leave_state, do: 3
     defcast leave_state, do: 4
     defcall full_reply, do: reply(5,6)
   end
   
   test "functional actor" do    
-    {:ok, actor} = FunActor.start(1)
+    {:ok, actor} = FunActor.start({1, :fun_actor})
+    assert is_pid(actor)
     assert FunActor.get(actor) == 1
     
     FunActor.set(actor, 2)
     assert FunActor.get(actor) == 2
     
+    FunActor.pm_set(actor)
+    assert FunActor.get(actor) == :two
+    
+    {:timeout, _} =  catch_exit(FunActor.timeout(actor))
+    assert catch_error(FunActor.unexported) == :undef
+    assert FunActor.my_unexported(actor) == :unexported
+    assert FunActor.wellknown == :wellknown
+    
+    FunActor.set(actor, 2)
     assert FunActor.reply_leave_state(actor) == 3
     assert FunActor.get(actor) == 2
     
@@ -49,14 +79,13 @@ defmodule ExActor.Test do
     assert FunActor.get(actor) == 1
   end
   
-  
-  ExActor.defactor ObjActor do
+  defmodule ObjActor do
+    use ExActor, tupmod: true
+    
     def init(nil), do: initial_state(0)
     def init(other), do: initial_state(other)
     
     defcast set(x), do: new_state(x)
-    defcast inc(x), state: value, do: new_state(value + x)
-    defcast dec(x), state: value, do: new_state(value - x)
     defcall get, state: value, do: value
     defcall me, do: this
   end
@@ -67,14 +96,11 @@ defmodule ExActor.Test do
     assert is_pid(actor.pid)
     assert actor === ObjActor.actor(actor.pid)
     
-    assert actor.get == 0
-    
-    actor.set(4)
-    assert actor.get == 4
-    
-    assert actor.inc(10).dec(3).get == 11
-    
+    assert actor.set(1).get == 1
     assert actor.me == actor
+    
+    ObjActor.set(actor.pid, 2)
+    assert ObjActor.get(actor.pid) == 2
   end
   
   test "objectified starting" do

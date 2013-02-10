@@ -8,6 +8,6 @@ defmodule ExActor.Mixfile do
    def application, do: []
    
    def deps do
-     [{:genx, "0.1", git: "https://github.com/yrashk/genx.git" }]
+     []
    end
 end

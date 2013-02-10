@@ -17,9 +17,9 @@ defmodule ExActor do
     IO.puts(Calculator.get(calculator))
     
   OO approach (based on tuple modules):
-    import ExActor
-    
-    defactor Calculator do
+    defmodule Calculator do
+      use ExActor, tupmod: true
+      
       defcast inc(x), state: state, do: new_state(state + x)
       defcast dec(x), state: state, do: new_state(state - x)
       defcall get, state: state, do: state
@@ -29,16 +29,42 @@ defmodule ExActor do
     IO.puts(calculator.inc(10).dec(5).get)
   """
   
-  defmacro __using__(_opts) do
+  defmacro __using__(opts) do
+    if opts[:tupmod] == true do
+      Module.put_attribute(__CALLER__.module, :tupmod, true)
+    end
+    
     quote do
       use GenServer.Behaviour
-      require GenX.GenServer
       import ExActor.Privates
-      unquote(interface_funs)
+      unquote(interface_funs(opts[:tupmod]))
+    end
+  end
+  
+  def interface_funs(true) do
+    quote do
+      def start, do: start(nil)
+      def start(args), do: start(args, [])
+      def start(args, options) do
+        :gen_server.start(__MODULE__, args, options) |> decorate_start_response
+      end
+    
+      def start_link, do: start_link(nil)
+      def start_link(args), do: start_link(args, [])
+      def start_link(args, options) do
+        :gen_server.start_link(__MODULE__, args, options) |> decorate_start_response
+      end
+    
+      def this, do: actor(self)
+      def pid({module, pid}) when module === __MODULE__, do: pid
+      def actor(pid), do: {__MODULE__, pid}
+    
+      defp decorate_start_response({:ok, pid}), do: {:ok, actor(pid)}
+      defp decorate_start_response(any), do: any
     end
   end
 
-  def interface_funs do
+  def interface_funs(_) do
     quote do
       def start, do: start(nil)
       def start(args), do: start(args, [])
@@ -56,33 +82,195 @@ defmodule ExActor do
   
   defmodule Privates do
     defmacro defcast(cast, body) do
-      wrap_and_delegate(:defcast, cast, body)
+      wrap_and_delegate(:defcast, cast, body ++ [module: __CALLER__.module])
     end
     
     defmacro defcast(cast, options, body) do
-      wrap_and_delegate(:defcast, cast, Keyword.from_enum(options ++ body))
+      wrap_and_delegate(:defcast, cast, Keyword.from_enum(options ++ body  ++ [module: __CALLER__.module]))
     end
     
     defmacro defcall(call, body) do
-      wrap_and_delegate(:defcall, call, body)
+      wrap_and_delegate(:defcall, call, body ++ [module: __CALLER__.module])
     end
     
     defmacro defcall(call, options, body) do
-      wrap_and_delegate(:defcall, call, Keyword.from_enum(options ++ body))
+      wrap_and_delegate(:defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
     end
     
-    defp wrap_and_delegate(type, name, options) do
+    defp wrap_and_delegate(type, {_, _, args} = name, options) do
       {state_arg, state_identifier} = get_state_identifier([], options[:state] || {:_, [], :quoted})
       handler_body = options[:do]
       
+      msg = msg_payload(name, args)
+
       options = (options |>
         Keyword.put(:state, state_arg) |>
-        Keyword.put(:do, wrap_handler_body(wrapper(type), state_identifier, handler_body))
+        Keyword.put(:do, wrap_handler_body(wrapper(type), state_identifier, handler_body)) |>
+        Keyword.put(:server_module, :gen_server) |>
+        Keyword.put(:server_fun, server_fun(type)) |>
+        Keyword.put(:handler_name, handler_name(type, msg, state_arg)) |>
+        Keyword.put(:name, name) |>
+        Keyword.put(:msg, msg) |>
+        Keyword.put(:tupmod, Module.get_attribute(options[:module], :tupmod))
       )
-
+      
       (quote do
-        GenX.GenServer.unquote(type)(unquote(name), unquote(options))
+        unquote(make_handler(options))
+        unquote(make_interface(options))
       end)
+    end
+    
+    defp msg_payload({function, _, _}, nil), do: function
+    defp msg_payload({function, _, _}, []), do: function
+    defp msg_payload({function, _, _}, args), do: quote(do: {unquote_splicing([function | args])})
+    
+    defp server_fun(:defcast), do: :cast
+    defp server_fun(:defcall), do: :call
+    
+    defp handler_name(:defcast, msg, state_arg) do
+      quote do
+        handle_cast(unquote(msg), unquote(state_arg))
+      end
+    end
+    
+    defp handler_name(:defcall, msg, state_arg) do
+      quote do
+        handle_call(unquote(msg), _from, unquote(state_arg))
+      end
+    end
+    
+    defp tupmod?(options), do: options[:tupmod]
+    
+    defp make_interface(options) do
+      if define_interface?(options) do
+        interface_defined!(options)
+        quote do
+          unquote(do_make_interface(tupmod?(options), options))
+          defoverridable [{unquote(fun_name(options)), unquote(interface_arity(options))}]
+        end
+      else
+        nil
+      end
+    end
+    
+    defp do_make_interface(true, options) do
+      call = quote do
+        apply(
+          unquote(options[:server_module]),
+          unquote(options[:server_fun]),
+          [unquote_splicing(server_args(options))]
+        )
+      end
+      
+      if options[:server_fun] == :cast do
+        call = quote do
+          unquote(call)
+          actor(pid)
+        end
+      end
+      
+      quote do
+        def unquote(interface_sig(options)) when module == __MODULE__ do
+          unquote(call)
+        end
+        unquote(do_make_interface(false, Keyword.put(options, :tupmod, false)))
+      end
+    end
+    
+    defp do_make_interface(_, options) do
+      quote do
+        def unquote(interface_sig(options)) do
+          apply(
+            unquote(options[:server_module]),
+            unquote(options[:server_fun]),
+            [unquote_splicing(server_args(options))]
+          )
+        end
+      end
+    end
+    
+    defp fun_name(options), do: elem(options[:name], 0)
+    defp interface_args(options), do: elem(interface_sig(options), 2)
+    defp interface_arity(options), do: length(interface_args(options))    
+    defp interface_id(options), do: {fun_name(options), interface_arity(options)}
+    
+    defp interface_sig(options) do
+      quote do
+        unquote(fun_name(options))(unquote_splicing(full_interface_args(options)))
+      end
+    end
+    
+    defp full_interface_args(options) do
+      args = elem(options[:name], 2) || []
+      case tupmod?(options) do
+        true ->
+          args ++ obj_server_arg
+        _ -> 
+          fun_server_arg(options) ++ args
+      end
+    end
+    
+    defp fun_server_arg(options) do
+      cond do
+        (options[:export] || true) == true -> [quote(do: server)]
+        true -> []
+      end
+    end
+    
+    defp obj_server_arg do
+      [quote(do: {module, pid})]
+    end
+    
+    defp exactor_interfaces(options), do: (Module.get_attribute(options[:module], :exactor_interfaces) || HashDict.new)
+    
+    defp define_interface?(options) do
+      should_export?(options) and not interface_defined?(options)
+    end
+    
+    defp interface_defined?(options) do
+      exactor_interfaces(options)[interface_id(options)] == true
+    end
+    
+    defp should_export?(options) do
+      (options[:export] || true) != false
+    end
+    
+    defp interface_defined!(options) do
+      Module.put_attribute(options[:module], :exactor_interfaces, 
+        Dict.put(exactor_interfaces(options), interface_id(options), true)
+      )
+    end
+    
+    defp server_args(options) do
+      [server_ref(options), options[:msg]] ++ timeout_arg(options)
+    end
+    
+    defp server_ref(options) do
+      case tupmod?(options) do
+        true -> quote(do: pid)
+        _ ->
+          cond do
+            (options[:export] || true) == true -> quote(do: server)
+            true -> options[:export]
+          end
+      end
+    end
+    
+    defp timeout_arg(options) do
+      case {options[:server_fun], options[:timeout]} do
+        {:call, timeout} when timeout != nil ->
+          [timeout]
+        _ -> []
+      end
+    end
+    
+    
+    defp make_handler(options) do
+      quote do
+        def unquote(options[:handler_name]) do
+          unquote(options[:do])
+        end
+      end
     end
     
     
@@ -121,103 +309,5 @@ defmodule ExActor do
     def handle_cast_response({:noreply, _, _} = r, _) do r end
     def handle_cast_response({:stop, _, _} = r, _) do r end
     def handle_cast_response(_, state) do {:noreply, state} end
-  end
-  
-  
-  
-  defmacro defactor(name, [do: definition]) do
-    quote do
-      defmodule unquote(name) do
-        defmodule Functional do
-          use ExActor
-          
-          # Dirty hack to get fully qualified parent module. Hopefully, this will not be needed 
-          # when the new version of elixir is released.
-          defmacrop parent do
-            (
-              String.split(Binary.Chars.to_binary(__MODULE__), "-") |>
-              Enum.reverse |>
-              Enum.drop(1) |>
-              Enum.reverse |> 
-              Enum.join("-") |> 
-              binary_to_atom
-            )
-          end
-          
-          def this, do: parent.this
-          
-          unquote(definition)
-        end
-        
-        def start, do: start(nil)
-        def start(args), do: start(args, [])
-        def start(args, options) do
-          decorate_start_response(Functional.start(args, options))
-        end
-        
-        def start_link, do: start_link(nil)
-        def start_link(args), do: start_link(args, [])
-        def start_link(args, options) do
-          decorate_start_response(Functional.start_link(args, options))
-        end
-        
-        def this, do: actor(self)
-        def pid({module, pid}) when module === __MODULE__, do: pid
-        def actor(pid), do: {__MODULE__, pid}
-        
-        defp decorate_start_response({:ok, pid}), do: {:ok, actor(pid)}
-        defp decorate_start_response(any), do: any
-        
-        import ExActor.ObjWrapper
-        import ExActor.Privates, only: [initial_state: 1]
-        unquote(definition)
-      end
-    end
-  end
-  
-  defmodule ObjWrapper do
-    defmacro defcast(cast, _) do
-      wrap_and_delegate(:defcast, cast)
-    end
-    
-    defmacro defcast(cast, _, _) do
-      wrap_and_delegate(:defcast, cast)
-    end
-    
-    defmacro defcall(call, _) do
-      wrap_and_delegate(:defcall, call)
-    end
-    
-    defmacro defcall(call, _, _) do
-      wrap_and_delegate(:defcall, call)
-    end
-    
-    defp wrap_and_delegate(type, {name, _, args}) do
-      call_args = [quote(do: pid) | (args || [])]
-      args = (args || []) ++ [quote(do: {module, pid})]
-      
-      (quote do
-        def unquote(name)(unquote_splicing(args)) when module === __MODULE__ do
-          unquote(make_delegator(type, name, call_args))
-        end
-      end)
-    end
-    
-    defp make_delegator(:defcall, name, args) do
-      delegate(name, args)
-    end
-    
-    defp make_delegator(:defcast, name, args) do
-      quote do
-        case unquote(delegate(name, args)) do
-          :ok -> {module, pid}
-          other -> other
-        end
-      end
-    end
-    
-    defp delegate(name, args) do
-      quote do: Functional.unquote(name)(unquote_splicing(args))
-    end
   end
 end
