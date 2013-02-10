@@ -45,33 +45,15 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.start_link(args)
     Actor.startLink(args, options)
     
-## OO like actors (based on tuple modules)
-    
-    defmodule ObjActor do
-      use ExActor, tupmod: true
-    
-      defcast inc(x), state: state, do: new_state(state + x)
-      defcall get, state: state, do: state
-    end
-    
-    # start methods return tuple module for direct function calling
-    {:ok, act} = ObjActor.start(0)
+## Tuple modules support
+    {:ok, pid} = Actor.start(0)
+    actor = Actor.actor(pid)
     
     # operations can be called directly on act
-    act.inc(1)
+    actor.inc(1)
     
     # cast returns the actor on which it operates, so you can chain calls
-    act.
+    actor.
       inc(5).
       inc(10).
       get
-      
-    # OO actor to pid:
-    act.pid
-    
-    # pid to OO actor
-    ObjActor.actor(pid)
-    
-    # you can also use it in functional style
-    ObjActor.inc(act.pid, 3)
-    ObjActor.get(act.pid)

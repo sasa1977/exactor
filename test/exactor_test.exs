@@ -30,9 +30,11 @@ defmodule ExActor.Test do
     defcall reply_leave_state, do: 3
     defcast leave_state, do: 4
     defcall full_reply, do: reply(5,6)
+    
+    defcall me, do: this
   end
   
-  test "functional actor" do    
+  test "actor" do    
     {:ok, actor} = FunActor.start({1, :fun_actor})
     assert is_pid(actor)
     assert FunActor.get(actor) == 1
@@ -57,6 +59,11 @@ defmodule ExActor.Test do
     
     assert FunActor.full_reply(actor) == 5
     assert FunActor.get(actor) == 6
+    
+    tupmod = FunActor.actor(actor)
+    assert tupmod.set(7).get == 7
+    assert tupmod.wellknown == :wellknown
+    assert tupmod.me == tupmod
   end
   
   test "functional starting" do
@@ -77,39 +84,5 @@ defmodule ExActor.Test do
     
     {:ok, actor} = FunActor.start_link(1, [])
     assert FunActor.get(actor) == 1
-  end
-  
-  defmodule ObjActor do
-    use ExActor, tupmod: true
-    
-    def init(nil), do: initial_state(0)
-    def init(other), do: initial_state(other)
-    
-    defcast set(x), do: new_state(x)
-    defcall get, state: value, do: value
-    defcall me, do: this
-  end
-  
-  test "objectified actor" do
-    {:ok, actor} = ObjActor.start
-    
-    assert is_pid(actor.pid)
-    assert actor === ObjActor.actor(actor.pid)
-    
-    assert actor.set(1).get == 1
-    assert actor.me == actor
-    
-    ObjActor.set(actor.pid, 2)
-    assert ObjActor.get(actor.pid) == 2
-  end
-  
-  test "objectified starting" do
-    assert elem(ObjActor.start, 1).get == 0
-    assert elem(ObjActor.start(1), 1).get == 1
-    assert elem(ObjActor.start(1, []), 1).get == 1
-    
-    assert elem(ObjActor.start_link, 1).get == 0
-    assert elem(ObjActor.start_link(1), 1).get == 1
-    assert elem(ObjActor.start_link(1, []), 1).get == 1
   end
 end

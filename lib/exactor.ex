@@ -29,42 +29,15 @@ defmodule ExActor do
     IO.puts(calculator.inc(10).dec(5).get)
   """
   
-  defmacro __using__(opts) do
-    if opts[:tupmod] == true do
-      Module.put_attribute(__CALLER__.module, :tupmod, true)
-    end
-    
+  defmacro __using__(_) do
     quote do
       use GenServer.Behaviour
       import ExActor.Privates
-      unquote(interface_funs(opts[:tupmod]))
+      unquote(interface_funs)
     end
   end
   
-  def interface_funs(true) do
-    quote do
-      def start, do: start(nil)
-      def start(args), do: start(args, [])
-      def start(args, options) do
-        :gen_server.start(__MODULE__, args, options) |> decorate_start_response
-      end
-    
-      def start_link, do: start_link(nil)
-      def start_link(args), do: start_link(args, [])
-      def start_link(args, options) do
-        :gen_server.start_link(__MODULE__, args, options) |> decorate_start_response
-      end
-    
-      def this, do: actor(self)
-      def pid({module, pid}) when module === __MODULE__, do: pid
-      def actor(pid), do: {__MODULE__, pid}
-    
-      defp decorate_start_response({:ok, pid}), do: {:ok, actor(pid)}
-      defp decorate_start_response(any), do: any
-    end
-  end
-
-  def interface_funs(_) do
+  def interface_funs do
     quote do
       def start, do: start(nil)
       def start(args), do: start(args, [])
@@ -77,6 +50,10 @@ defmodule ExActor do
       def start_link(args, options) do
         :gen_server.start_link(__MODULE__, args, options)
       end
+      
+      def this, do: actor(self)
+      def pid({module, pid}) when module === __MODULE__, do: pid
+      def actor(pid), do: {__MODULE__, pid}
     end
   end
   
@@ -110,8 +87,7 @@ defmodule ExActor do
         Keyword.put(:server_fun, server_fun(type)) |>
         Keyword.put(:handler_name, handler_name(type, msg, state_arg)) |>
         Keyword.put(:name, name) |>
-        Keyword.put(:msg, msg) |>
-        Keyword.put(:tupmod, Module.get_attribute(options[:module], :tupmod))
+        Keyword.put(:msg, msg)
       )
       
       (quote do
@@ -145,7 +121,8 @@ defmodule ExActor do
       if define_interface?(options) do
         interface_defined!(options)
         quote do
-          unquote(do_make_interface(tupmod?(options), options))
+          unquote(make_obj_interface(options))
+          unquote(make_fun_interface(options))
           defoverridable [{unquote(fun_name(options)), unquote(interface_arity(options))}]
         end
       else
@@ -153,7 +130,9 @@ defmodule ExActor do
       end
     end
     
-    defp do_make_interface(true, options) do
+    defp make_obj_interface(options) do
+      options = Keyword.put(options, :tupmod, true)
+      
       call = quote do
         apply(
           unquote(options[:server_module]),
@@ -173,11 +152,11 @@ defmodule ExActor do
         def unquote(interface_sig(options)) when module == __MODULE__ do
           unquote(call)
         end
-        unquote(do_make_interface(false, Keyword.put(options, :tupmod, false)))
       end
     end
     
-    defp do_make_interface(_, options) do
+    defp make_fun_interface(options) do
+      options = Keyword.put(options, :tupmod, false)
       quote do
         def unquote(interface_sig(options)) do
           apply(
