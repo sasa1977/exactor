@@ -210,9 +210,7 @@ defmodule ExActor do
       exactor_interfaces(options)[interface_id(options)] == true
     end
     
-    defp should_export?(options) do
-      (options[:export] || true) != false
-    end
+    defp should_export?(options), do: options[:export] != false
     
     defp interface_defined!(options) do
       Module.put_attribute(options[:module], :exactor_interfaces, 
