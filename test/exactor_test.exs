@@ -32,6 +32,14 @@ defmodule ExActor.Test do
     defcall full_reply, do: reply(5,6)
     
     defcall me, do: this
+    
+    defcall test_exc do
+      try do
+        throw(__ENV__.line) 
+      catch _,line ->
+        {line, hd(System.stacktrace) |> elem(3)}
+      end
+    end
   end
   
   test "actor" do    
@@ -64,6 +72,10 @@ defmodule ExActor.Test do
     assert tupmod.set(7).get == 7
     assert tupmod.wellknown == :wellknown
     assert tupmod.me == tupmod
+    
+    {line, exception} = FunActor.test_exc(actor)
+    assert (exception[:file] |> Path.basename) == 'exactor_test.exs'
+    assert exception[:line] == line
   end
   
   test "functional starting" do
