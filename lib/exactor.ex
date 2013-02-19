@@ -39,17 +39,24 @@ defmodule ExActor do
   
   def interface_funs do
     quote do
-      def start, do: start(nil)
-      def start(args), do: start(args, [])
-      def start(args, options) do
+      def start(args // nil, options // []) do
         :gen_server.start(__MODULE__, args, options)
       end
       
-      def start_link, do: start_link(nil)
-      def start_link(args), do: start_link(args, [])
-      def start_link(args, options) do
+      def start_link(args // nil, options // []) do
         :gen_server.start_link(__MODULE__, args, options)
       end
+
+      def actor_start(args // nil, options // []) do
+        start(args, options) |> response_to_actor
+      end
+
+      def actor_start_link(args // nil, options // []) do
+        start_link(args, options) |> response_to_actor
+      end
+
+      defp response_to_actor({:ok, pid}), do: actor(pid)
+      defp response_to_actor(any), do: any
       
       def this, do: actor(self)
       def pid({module, pid}) when module === __MODULE__, do: pid

@@ -2,7 +2,7 @@ defmodule ExActor.Test do
   use ExUnit.Case 
   require ExActor
   
-  defmodule FunActor do
+  defmodule TestActor do
     use ExActor
     
     def init({arg, register_name}) do 
@@ -42,59 +42,64 @@ defmodule ExActor.Test do
     end
   end
   
-  test "actor" do    
-    {:ok, actor} = FunActor.start({1, :fun_actor})
+  test "basic" do    
+    {:ok, actor} = TestActor.start({1, :fun_actor})
     assert is_pid(actor)
-    assert FunActor.get(actor) == 1
+    assert TestActor.get(actor) == 1
     
-    FunActor.set(actor, 2)
-    assert FunActor.get(actor) == 2
+    TestActor.set(actor, 2)
+    assert TestActor.get(actor) == 2
     
-    FunActor.pm_set(actor)
-    assert FunActor.get(actor) == :two
+    TestActor.pm_set(actor)
+    assert TestActor.get(actor) == :two
     
-    {:timeout, _} =  catch_exit(FunActor.timeout(actor))
-    assert catch_error(FunActor.unexported) == :undef
-    assert FunActor.my_unexported(actor) == :unexported
-    assert FunActor.wellknown == :wellknown
+    {:timeout, _} =  catch_exit(TestActor.timeout(actor))
+    assert catch_error(TestActor.unexported) == :undef
+    assert TestActor.my_unexported(actor) == :unexported
+    assert TestActor.wellknown == :wellknown
     
-    FunActor.set(actor, 2)
-    assert FunActor.reply_leave_state(actor) == 3
-    assert FunActor.get(actor) == 2
+    TestActor.set(actor, 2)
+    assert TestActor.reply_leave_state(actor) == 3
+    assert TestActor.get(actor) == 2
     
-    FunActor.leave_state(actor)
-    assert FunActor.get(actor) == 2
+    TestActor.leave_state(actor)
+    assert TestActor.get(actor) == 2
     
-    assert FunActor.full_reply(actor) == 5
-    assert FunActor.get(actor) == 6
+    assert TestActor.full_reply(actor) == 5
+    assert TestActor.get(actor) == 6
     
-    tupmod = FunActor.actor(actor)
+    tupmod = TestActor.actor(actor)
     assert tupmod.set(7).get == 7
     assert tupmod.wellknown == :wellknown
     assert tupmod.me == tupmod
     
-    {line, exception} = FunActor.test_exc(actor)
+    {line, exception} = TestActor.test_exc(actor)
     assert (exception[:file] |> Path.basename) == 'exactor_test.exs'
     assert exception[:line] == line
   end
+
+  test "actor start" do
+    assert TestActor.actor_start(0).set(1).get == 1
+    assert TestActor.actor_start_link(0).set(2).get == 2
+  end
   
-  test "functional starting" do
-    {:ok, actor} = FunActor.start
-    assert FunActor.get(actor) == nil
+  test "starting" do
+    {:ok, actor} = TestActor.start
+    assert TestActor.get(actor) == nil
     
-    {:ok, actor} = FunActor.start(1)
-    assert FunActor.get(actor) == 1
+    {:ok, actor} = TestActor.start(1)
+    assert TestActor.get(actor) == 1
     
-    {:ok, actor} = FunActor.start(1, [])
-    assert FunActor.get(actor) == 1
+    {:ok, actor} = TestActor.start(1, [])
+    assert TestActor.get(actor) == 1
     
-    {:ok, actor} = FunActor.start_link
-    assert FunActor.get(actor) == nil
+    {:ok, actor} = TestActor.start_link
+    assert TestActor.get(actor) == nil
     
-    {:ok, actor} = FunActor.start_link(1)
-    assert FunActor.get(actor) == 1
+    {:ok, actor} = TestActor.start_link(1)
+    assert TestActor.get(actor) == 1
     
-    {:ok, actor} = FunActor.start_link(1, [])
-    assert FunActor.get(actor) == 1
+    {:ok, actor} = TestActor.start_link(1, [])
+    assert TestActor.get(actor) == 1
   end
 end

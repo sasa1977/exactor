@@ -46,7 +46,10 @@ __Warning__: not thoroughly tested, use at your own risk.
     Actor.startLink(args, options)
     
 ## Tuple modules support
-    {:ok, pid} = Actor.start(0)
+    
+    actor = Actor.actor_start_link(0)
+
+    # alternatively, from pid:
     actor = Actor.actor(pid)
     
     # operations can be called directly on act
