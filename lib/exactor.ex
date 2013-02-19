@@ -18,14 +18,14 @@ defmodule ExActor do
     
   OO approach (based on tuple modules):
     defmodule Calculator do
-      use ExActor, tupmod: true
+      use ExActor
       
       defcast inc(x), state: state, do: new_state(state + x)
       defcast dec(x), state: state, do: new_state(state - x)
       defcall get, state: state, do: state
     end
     
-    {:ok, calculator} = Calculator.start(0)
+    calculator = Actor.actor_start_link(0)
     IO.puts(calculator.inc(10).dec(5).get)
   """
   

@@ -3,11 +3,10 @@ ExActor
 Macros for easier implementation and usage of gen_server based actors (processes) in Elixir.
 This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate and changes some semantics of the handle_call/cast responses.
 
-__Warning__: not thoroughly tested, use at your own risk.
-
 # Examples
 
-## Functional style
+## Basic usage
+
     defmodule Actor do
       use ExActor
       
@@ -52,7 +51,7 @@ __Warning__: not thoroughly tested, use at your own risk.
     # alternatively, from pid:
     actor = Actor.actor(pid)
     
-    # operations can be called directly on act
+    # operations can be called directly on actor which is a tuple module
     actor.inc(1)
     
     # cast returns the actor on which it operates, so you can chain calls
