@@ -19,7 +19,19 @@ This library is inspired by (though not depending on) [GenX](https://github.com/
     
     Actor.inc(act, 2)
     Actor.get(act)         # 3
-    
+
+## Singleton actors
+
+    defmodule SingletonActor do
+      use ExActor, export: :singleton   # The actor process will be locally registered
+
+      defcall get, state: state, do: state
+      defcast set(x), do: new_state(x)
+    end
+
+    SingletonActor.start
+    SingletonActor.set(5)
+    SingletonActor.get
 
 ## Handling of return values
 

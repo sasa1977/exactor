@@ -5,15 +5,6 @@ defmodule ExActor.Test do
   defmodule TestActor do
     use ExActor
     
-    def init({arg, register_name}) do 
-      Process.register(self, register_name)
-      initial_state(arg)
-    end
-    
-    def init(arg) do
-      super(arg)
-    end
-    
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: state
     
@@ -24,8 +15,6 @@ defmodule ExActor.Test do
     
     defcall unexported, export: false, do: :unexported
     def my_unexported(server), do: :gen_server.call(server, :unexported)
-    
-    defcall wellknown, export: :fun_actor, do: :wellknown
     
     defcall reply_leave_state, do: 3
     defcast leave_state, do: 4
@@ -43,7 +32,7 @@ defmodule ExActor.Test do
   end
   
   test "basic" do    
-    {:ok, actor} = TestActor.start({1, :fun_actor})
+    {:ok, actor} = TestActor.start(1)
     assert is_pid(actor)
     assert TestActor.get(actor) == 1
     
@@ -56,7 +45,6 @@ defmodule ExActor.Test do
     {:timeout, _} =  catch_exit(TestActor.timeout(actor))
     assert catch_error(TestActor.unexported) == :undef
     assert TestActor.my_unexported(actor) == :unexported
-    assert TestActor.wellknown == :wellknown
     
     TestActor.set(actor, 2)
     assert TestActor.reply_leave_state(actor) == 3
@@ -70,7 +58,6 @@ defmodule ExActor.Test do
     
     tupmod = TestActor.actor(actor)
     assert tupmod.set(7).get == 7
-    assert tupmod.wellknown == :wellknown
     assert tupmod.me == tupmod
     
     {line, exception} = TestActor.test_exc(actor)
@@ -101,5 +88,33 @@ defmodule ExActor.Test do
     
     {:ok, actor} = TestActor.start_link(1, [])
     assert TestActor.get(actor) == 1
+  end
+  
+  
+  defmodule SingletonActor do
+    use ExActor, export: :singleton
+    
+    defcall get, state: state, do: state
+    defcast set(x), do: new_state(x)
+  end
+  
+  test "singleton" do
+    {:ok, _} = SingletonActor.start(0)
+    SingletonActor.set(5)
+    assert SingletonActor.get == 5
+  end
+  
+  
+  defmodule GlobalSingletonActor do
+    use ExActor, export: {:global, :global_singleton}
+    
+    defcall get, state: state, do: state
+    defcast set(x), do: new_state(x)
+  end
+  
+  test "global singleton" do
+    {:ok, _} = GlobalSingletonActor.start(0)
+    GlobalSingletonActor.set(3)
+    assert GlobalSingletonActor.get == 3
   end
 end
