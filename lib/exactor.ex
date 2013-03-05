@@ -62,16 +62,14 @@ defmodule ExActor do
       
       def this, do: actor(self)
       def pid({module, pid}) when module === __MODULE__, do: pid
-      def actor(pid), do: {__MODULE__, pid}
+      def actor(pid), do: {__MODULE__, :exactor_tupmod, pid}
     end
   end
   
   defp start_args(caller) do
     defargs = [quote(do: __MODULE__), quote(do: args), quote(do: options)]
     case Module.get_attribute(caller.module, :exactor_global_options)[:export] do
-      nil -> defargs
-      false -> defargs
-      true -> defargs
+      default when default in [nil, false, true] -> defargs
       
       local_name when is_atom(local_name) ->
         [quote(do: {:local, unquote(local_name)}) | defargs]
@@ -88,33 +86,31 @@ defmodule ExActor do
   
   defmodule Privates do
     defmacro defcast(cast, body) do
-      wrap_and_delegate(__CALLER__, :defcast, cast, body ++ [module: __CALLER__.module])
+      generate_funs(:defcast, cast, body ++ [module: __CALLER__.module])
     end
     
     defmacro defcast(cast, options, body) do
-      wrap_and_delegate(__CALLER__, :defcast, cast, Keyword.from_enum(options ++ body  ++ [module: __CALLER__.module]))
+      generate_funs(:defcast, cast, Keyword.from_enum(options ++ body  ++ [module: __CALLER__.module]))
     end
     
     defmacro defcall(call, body) do
-      wrap_and_delegate(__CALLER__, :defcall, call, body ++ [module: __CALLER__.module])
+      generate_funs(:defcall, call, body ++ [module: __CALLER__.module])
     end
     
     defmacro defcall(call, options, body) do
-      wrap_and_delegate(__CALLER__, :defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
+      generate_funs(:defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
     end
     
-    defp wrap_and_delegate(caller, type, {_, _, args} = name, options) do
-      {state_arg, state_identifier} = get_state_identifier([], options[:state] || {:_, [], :quoted})
-      handler_body = options[:do]
+    defp generate_funs(type, {_, _, args} = name, options) do
+      {state_arg, state_identifier} = get_state_identifier(options[:state] || {:_, [], :quoted})
       
       msg = msg_payload(name, args)
       
       options =
-        Keyword.merge(Module.get_attribute(caller.module, :exactor_global_options), options) |>
+        Keyword.merge(global_options(options[:module]), options) |>
         Keyword.merge(
           state: state_arg,
-          do: wrap_handler_body(wrapper(type), state_identifier, handler_body),
-          server_module: :gen_server,
+          do: wrap_handler_body(wrapper(type), state_identifier, options[:do]),
           server_fun: server_fun(type),
           handler_name: handler_name(type, msg, state_arg),
           name: name,
@@ -126,6 +122,8 @@ defmodule ExActor do
         unquote(make_interface(options))
       end)
     end
+    
+    defp global_options(module), do: Module.get_attribute(module, :exactor_global_options)
     
     defp msg_payload({function, _, _}, nil), do: function
     defp msg_payload({function, _, _}, []), do: function
@@ -166,7 +164,7 @@ defmodule ExActor do
       
       call = quote do
         apply(
-          unquote(options[:server_module]),
+          :gen_server,
           unquote(options[:server_fun]),
           [unquote_splicing(server_args(options))]
         )
@@ -191,7 +189,7 @@ defmodule ExActor do
       quote do
         def unquote(interface_sig(options)) do
           apply(
-            unquote(options[:server_module]),
+            :gen_server,
             unquote(options[:server_fun]),
             [unquote_splicing(server_args(options))]
           )
@@ -228,7 +226,7 @@ defmodule ExActor do
     end
     
     defp obj_server_arg do
-      [quote(do: {module, pid})]
+      [quote(do: {module, :exactor_tupmod, pid})]
     end
     
     defp exactor_interfaces(options), do: (Module.get_attribute(options[:module], :exactor_interfaces) || HashDict.new)
@@ -258,8 +256,7 @@ defmodule ExActor do
         true -> quote(do: pid)
         _ ->
           case options[:export] do
-            nil -> quote(do: server)
-            true -> quote(do: server)
+            default when default in [nil, false, true] -> quote(do: server)
             local when is_atom(local) -> local
             {:local, local} -> local
             {:global, _} = global -> global
@@ -285,17 +282,20 @@ defmodule ExActor do
     end
     
     
-    defp get_state_identifier(_, {:=, _, [_, state_identifier]} = state_arg) do
+    defp get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
       {state_arg, state_identifier}
     end
 
-    defp get_state_identifier(line, any) do
-      get_state_identifier(line, {:=, line, [any, {:___generated_state, line, nil}]})
+    defp get_state_identifier(any) do
+      get_state_identifier({:=, [], [any, {:___generated_state, [], nil}]})
     end
     
     defp wrap_handler_body(handler, state_identifier, body) do
       quote do
-        unquote(handler)((fn() -> unquote(body) end).(), unquote(state_identifier))
+        (
+          unquote(body)
+        ) |>
+        unquote(handler)(unquote(state_identifier))
       end
     end
     
