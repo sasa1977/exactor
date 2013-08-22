@@ -142,6 +142,14 @@ defmodule ExActor do
         unquote(def_tupmod_interface)
         unquote(def_fun_interface)
 
+        arity = length(args) + case options[:export] do
+          nil -> 1
+          true -> 1
+          _ -> 0
+        end
+        
+        defoverridable [{name, arity}]
+
         exported = HashSet.put(exported, {name, args})
       end
     end
@@ -156,11 +164,7 @@ defmodule ExActor do
         do: quote do
           server_fun = unquote(server_fun)
           
-          result = apply(
-            :gen_server,
-            server_fun,
-            [unquote_splicing(ExActor.server_args(options, :obj, type, msg))]
-          )
+          result = :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :obj, type, msg)))
           
           case server_fun do
             :cast -> actor(pid)
@@ -178,11 +182,7 @@ defmodule ExActor do
         ExActor.interface_args_fun(args, options), 
         [],
         do: quote do
-          apply(
-            :gen_server,
-            unquote(server_fun),
-            [unquote_splicing(ExActor.server_args(options, :fun, type, msg))]
-          )
+          :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :fun, type, msg)))
         end
       )
     end
