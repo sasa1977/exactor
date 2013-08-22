@@ -43,7 +43,8 @@ defmodule ExActor.Test do
     assert TestActor.get(actor) == :two
     
     {:timeout, _} =  catch_exit(TestActor.timeout(actor))
-    assert catch_error(TestActor.unexported) == :undef
+
+    assert catch_error(TestActor.unexported(actor)) == :undef
     assert TestActor.my_unexported(actor) == :unexported
     
     TestActor.set(actor, 2)
@@ -116,5 +117,28 @@ defmodule ExActor.Test do
     {:ok, _} = GlobalSingletonActor.start(0)
     GlobalSingletonActor.set(3)
     assert GlobalSingletonActor.get == 3
+  end
+
+
+  defmodule DynActor do
+    use ExActor
+
+    lc op inlist [:get] do
+      defcall unquote(op), state: state do
+        state
+      end
+    end
+
+    lc op inlist [:set] do
+      defcast unquote(op)(arg) do
+        new_state(arg)
+      end
+    end
+  end
+
+  test "dynamic" do
+    {:ok, pid} = DynActor.start
+    DynActor.set(pid, 1)
+    assert DynActor.get(pid) == 1
   end
 end
