@@ -120,6 +120,30 @@ defmodule ExActor.Test do
   end
 
 
+  defmodule InitialState1 do
+    use ExActor, initial_state: HashDict.new
+    defcall get, state: state, do: state
+  end
+
+  defmodule InitialState2 do
+    use ExActor
+    definit do: HashSet.new
+    defcall get, state: state, do: state
+  end
+
+  defmodule InitialState3 do
+    use ExActor
+    definit input: x, do: x + 1
+    defcall get, state: state, do: state
+  end
+
+  test "initial state" do
+    assert (InitialState1.start |> elem(1) |> InitialState1.get) == HashDict.new
+    assert (InitialState2.start |> elem(1) |> InitialState2.get) == HashSet.new
+    assert (InitialState3.start(1) |> elem(1) |> InitialState3.get) == 2
+  end
+
+
   defmodule DynActor do
     use ExActor
 

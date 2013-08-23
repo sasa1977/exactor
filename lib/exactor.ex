@@ -65,9 +65,11 @@ defmodule ExActor do
       def this, do: actor(self)
       def pid({module, pid}) when module === __MODULE__, do: pid
       def actor(pid), do: {__MODULE__, :exactor_tupmod, pid}
+
+      unquote(def_initializer(caller))
     end
   end
-  
+
   defp start_args(caller) do
     defargs = [quote(do: __MODULE__), quote(do: args), quote(do: options)]
     case Module.get_attribute(caller.module, :exactor_global_options)[:export] do
@@ -83,6 +85,31 @@ defmodule ExActor do
         [quote(do: {:global, unquote(global_name)}) | defargs]
       
       _ -> defargs
+    end
+  end
+
+  defp def_initializer(caller) do
+    case Module.get_attribute(caller.module, :exactor_global_options)[:initial_state] do
+      nil -> nil
+      state ->
+        quote do
+          def init(_), do: initial_state(unquote(state))
+        end
+    end
+  end
+
+  defmacro definit(opts) do
+    quote do
+      opts = unquote(Macro.escape(opts, unquote: true))
+      
+      def(
+        :init,
+        [opts[:input] || quote(do: _)],
+        [],
+        do: quote do
+          initial_state(unquote(opts[:do]))
+        end
+      )
     end
   end
   
