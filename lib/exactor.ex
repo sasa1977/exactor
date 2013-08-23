@@ -259,8 +259,11 @@ defmodule ExActor do
     quote do
       {state_arg, state_identifier} = ExActor.get_state_identifier(options[:state] || {:_, [], :quoted})
       {handler_name, handler_args} = ExActor.handler_sig(type, msg, state_arg)
+      guard = options[:when]
+      if guard, do: guard = [guard], else: guard = []
       handler_body = ExActor.wrap_handler_body(unquote(wrapper(type)), state_identifier, options[:do])
-      def(handler_name, handler_args, [], do: handler_body)
+
+      def(handler_name, handler_args, guard, do: handler_body)
     end
   end
 

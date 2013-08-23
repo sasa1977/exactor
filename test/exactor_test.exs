@@ -144,6 +144,19 @@ defmodule ExActor.Test do
   end
 
 
+  defmodule AbsActor do
+    use ExActor
+    
+    defcall get, state: state, when: state < 0, do: state * -1
+    defcall get, state: state, do: state
+  end
+
+  test "guards" do
+    assert (AbsActor.start(1) |> elem(1) |> AbsActor.get) == 1
+    assert (AbsActor.start(-2) |> elem(1) |> AbsActor.get) == 2
+  end
+
+
   defmodule DynActor do
     use ExActor
 
