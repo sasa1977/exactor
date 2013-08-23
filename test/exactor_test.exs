@@ -1,6 +1,5 @@
 defmodule ExActor.Test do
   use ExUnit.Case 
-  require ExActor
   
   defmodule TestActor do
     use ExActor
@@ -144,16 +143,24 @@ defmodule ExActor.Test do
   end
 
 
-  defmodule AbsActor do
+  defmodule PatternMatch do
     use ExActor
-    
-    defcall get, state: state, when: state < 0, do: state * -1
-    defcall get, state: state, do: state
+
+    defcall test(1), do: :one
+    defcall test(2), do: :two
+    defcall test(x), when: x < 4, do: :three
+    defcall test(_), state: 4, do: :four
+    defcall test(_), state: state, when: state < 6, do: :five
+    defcall test(_), do: :rest
   end
 
-  test "guards" do
-    assert (AbsActor.start(1) |> elem(1) |> AbsActor.get) == 1
-    assert (AbsActor.start(-2) |> elem(1) |> AbsActor.get) == 2
+  test "pattern matching" do
+    assert (PatternMatch.start |> elem(1) |> PatternMatch.test(1)) == :one
+    assert (PatternMatch.start |> elem(1) |> PatternMatch.test(2)) == :two
+    assert (PatternMatch.start |> elem(1) |> PatternMatch.test(3)) == :three
+    assert (PatternMatch.start(4) |> elem(1) |> PatternMatch.test(4)) == :four
+    assert (PatternMatch.start(5) |> elem(1) |> PatternMatch.test(4)) == :five
+    assert (PatternMatch.start(6) |> elem(1) |> PatternMatch.test(4)) == :rest
   end
 
 

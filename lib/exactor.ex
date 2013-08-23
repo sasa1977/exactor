@@ -164,34 +164,36 @@ defmodule ExActor do
 
   defp define_interface(type) do
     quote do
-      unless options[:export] == false or HashSet.member?(exported, {name, args}) do
+      arity = length(args) + case options[:export] do
+        nil -> 1
+        true -> 1
+        _ -> 0
+      end
+
+      unless options[:export] == false or HashSet.member?(exported, {name, arity}) do
         server_fun = unquote(server_fun(type))
         unquote(def_tupmod_interface)
         unquote(def_fun_interface)
 
-        arity = length(args) + case options[:export] do
-          nil -> 1
-          true -> 1
-          _ -> 0
-        end
-        
-        defoverridable [{name, arity}]
-
-        exported = HashSet.put(exported, {name, args})
+        exported = HashSet.put(exported, {name, arity})
       end
     end
   end
 
   defp def_tupmod_interface do
     quote do
+      {server_arg, interface_args} = ExActor.interface_args_obj(args)
+      send_msg = ExActor.msg_payload(name, interface_args)
+      interface_args = interface_args ++ [server_arg]
+
       def(
         name, 
-        ExActor.interface_args_obj(args), 
+        interface_args, 
         [],
         do: quote do
           server_fun = unquote(server_fun)
           
-          result = :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :obj, type, msg)))
+          result = :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :obj, type, send_msg)))
           
           case server_fun do
             :cast -> actor(pid)
@@ -202,31 +204,49 @@ defmodule ExActor do
     end
   end
 
+  def interface_args_obj(args), do: {server_arg_obj, stub_args(args)}
+  defp server_arg_obj do
+    quote(do: {module, :exactor_tupmod, pid})
+  end
+
   defp def_fun_interface do
     quote do
+      {server_arg, interface_args} = ExActor.interface_args_fun(args, options)
+      send_msg = ExActor.msg_payload(name, interface_args)
+      interface_args = case server_arg do
+        nil -> interface_args
+        _ -> [server_arg | interface_args]
+      end
+
       def(
         name, 
-        ExActor.interface_args_fun(args, options), 
+        interface_args,
         [],
         do: quote do
-          :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :fun, type, msg)))
+          :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :fun, type, send_msg)))
         end
       )
     end
   end
 
-  def interface_args_fun(args, options), do: server_arg_fun(options) ++ args
-  def interface_args_obj(args), do: args ++ server_arg_obj
+  def interface_args_fun(args, options), do: {server_arg_fun(options), stub_args(args)}
 
   defp server_arg_fun(options) do
     cond do
-      (options[:export] || true) == true -> [quote(do: server)]
-      true -> []
+      (options[:export] || true) == true -> quote(do: server)
+      true -> nil
     end
   end
-  
-  defp server_arg_obj do
-    [quote(do: {module, :exactor_tupmod, pid})]
+
+  defp stub_args(args) do
+    Enum.reduce(args, {0, []}, fn(_, {index, args}) ->
+      {
+        index + 1,
+        [{:"arg#{index}", [], nil} | args]
+      }
+    end)
+    |> elem(1)
+    |> Enum.reverse
   end
   
   defp server_fun(:defcast), do: :cast
