@@ -1,7 +1,7 @@
 ExActor
 =======
-Macros for easier implementation and usage of gen_server based actors (processes) in Elixir.
-This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate and changes some semantics of the handle_call/cast responses.
+Simplified implementation and usage of `gen_server` based actors in Elixir.
+This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate, and changes some semantics of the handle_call/cast responses.
 
 # Examples
 
@@ -15,6 +15,7 @@ defmodule Actor do
   defcall get, state: state, do: state
 end
 
+# initial state is set to start argument
 {:ok, act} = Actor.start(1)
 Actor.get(act)         # 1
 
@@ -56,28 +57,59 @@ def init(arg), do: {:ok, arg}                 # standard gen_server response
     
 ```elixir
 Actor.start         # same as Actor.start(nil)
-Actor.start(args)
-Actor.start(args, options)
+Actor.start(init_arg)
+Actor.start(init_arg, options)
 
 Actor.start_link
-Actor.start_link(args)
-Actor.startLink(args, options)
+Actor.start_link(init_arg)
+Actor.start_link(init_arg, options)
 ```
-    
-## Tuple modules support
-    
+
+## Simplified initialization
+
 ```elixir
-actor = Actor.actor_start_link(0)
+# define initial state
+use ExActor, initial_state: HashDict.new
 
-# alternatively, from pid:
-actor = Actor.actor(pid)
+# alternatively as the function
+definit do: HashSet.new
 
-# operations can be called directly on actor which is a tuple module
-actor.inc(1)
+# using the input argument
+definit input: x, do: x + 1
+```
 
-# cast returns the actor on which it operates, so you can chain calls
-actor.
-  inc(5).
-  inc(10).
-  get
- ```
+## Pattern matching
+
+```elixir
+defcall a(1), do: ...
+defcall a(2), do: ...
+defcall a(x), state: 1, do: ...
+defcall a(x), when: x > 1, do: ...
+defcall a(x), state: state, when: state > 1, do: ...
+defcall a(_), do: ...
+```
+
+Note: all matches take place at the `handle_call` or `handle_cast` level. The interface function simply passes the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
+
+## Skipping interface funs
+
+```elixir
+# interface fun will not be generated, just handle_call clause
+defcall unexported, export: false, do: :unexported
+```
+
+## Runtime friendliness
+
+May be useful if calls/casts simply delegate to some module/functions.
+
+```elixir
+defmodule DynActor do
+  use ExActor
+
+  lc op inlist [:op1, :op2] do
+    defcall unquote(op), state: state do
+      SomeModule.unquote(op)(state)
+    end
+  end
+end
+```
