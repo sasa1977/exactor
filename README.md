@@ -1,9 +1,9 @@
-ExActor
-=======
+# ExActor
+
 Simplified implementation and usage of `gen_server` based actors in Elixir.
 This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate, and changes some semantics of the handle_call/cast responses.
 
-# Examples
+Status: I use it in production.
 
 ## Basic usage
 
@@ -43,11 +43,11 @@ SingletonActor.get
 ```elixir
 defcall a, state: state, do: 5                # responds 5, doesn't change state
 defcall b, do: reply(5, 6)                    # responds 5, sets new state to 6
-defcall c, do: {:reply, response, newstate}   # standard gen_server response is left intact
+defcall c, do: {:reply, response, new_state}  # standard gen_server response is left intact
 
 defcast c, do: :ok                            # ignores response, doesn't change state
-defcast d, do: new_state(:ok)                 # sets new state
-defcast f, do: {:noreply, newstate}           # standard gen_server response is left intact
+defcast d, do: new_state(new_state)           # sets new state
+defcast f, do: {:noreply, new_state}          # standard gen_server response is left intact
 
 def init(arg), do: initial_state(arg)         # sets initial state
 def init(arg), do: {:ok, arg}                 # standard gen_server response    

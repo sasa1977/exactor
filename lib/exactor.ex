@@ -1,32 +1,6 @@
 defmodule ExActor do
   @moduledoc """
-  Syntactic sugar for defining and creating actors.
-
-  Examples:
-    defmodule Calculator do
-      use ExActor
-      
-      defcast inc(x), state: state, do: new_state(state + x)
-      defcast dec(x), state: state, do: new_state(state - x)
-      defcall get, state: state, do: state
-    end
-    
-    {:ok, calculator} = Calculator.start(0)
-    Calculator.inc(calculator, 10)
-    Calculator.dec(calculator, 5)
-    IO.puts(Calculator.get(calculator))
-    
-  OO approach (based on tuple modules):
-    defmodule Calculator do
-      use ExActor
-      
-      defcast inc(x), state: state, do: new_state(state + x)
-      defcast dec(x), state: state, do: new_state(state - x)
-      defcall get, state: state, do: state
-    end
-    
-    calculator = Actor.actor_start_link(0)
-    IO.puts(calculator.inc(10).dec(5).get)
+  Syntactic sugar for defining and creating actors. See README.md for details.
   """
   
   defmacro __using__(opts) do
@@ -34,14 +8,20 @@ defmodule ExActor do
     
     quote do
       use GenServer.Behaviour
-      import ExActor
+      import ExActor, only: [
+        definit: 1,
+        defcall: 2, defcall: 3,
+        defcast: 2, defcast: 3,
+        handle_call_response: 2, handle_cast_response: 2,
+        initial_state: 1, new_state: 1, reply: 2
+      ]
       unquote(interface_funs(__CALLER__))
       
       exported = HashSet.new
     end
   end
   
-  def interface_funs(caller) do
+  defp interface_funs(caller) do
     quote do
       def start(args // nil, options // []) do
         :gen_server.start(unquote_splicing(start_args(caller)))
