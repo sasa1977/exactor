@@ -99,17 +99,10 @@ defmodule ExActor do
   end
 
   defmacro definit(opts) do
-    quote do
-      opts = unquote(Macro.escape(opts, unquote: true))
-      
-      def(
-        :init,
-        [opts[:input] || quote(do: _)],
-        [],
-        do: quote do
-          initial_state(unquote(opts[:do]))
-        end
-      )
+    quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
+      def init(unquote_splicing([opts[:input] || quote(do: _)])) do
+        initial_state(unquote(opts[:do]))
+      end
     end
   end
   
@@ -181,26 +174,23 @@ defmodule ExActor do
   end
 
   defp def_tupmod_interface do
-    quote do
+    quote bind_quoted: [] do
       {server_arg, interface_args} = ExActor.interface_args_obj(args)
       send_msg = ExActor.msg_payload(name, interface_args)
       interface_args = interface_args ++ [server_arg]
 
-      def(
-        name, 
-        interface_args, 
-        [],
-        do: quote do
-          server_fun = unquote(server_fun)
+      def unquote(name)(unquote_splicing(interface_args)) do
+        server_fun = unquote(server_fun)
           
-          result = :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :obj, type, send_msg)))
+          result = :gen_server.unquote(server_fun)(
+            unquote_splicing(ExActor.server_args(options, :obj, type, send_msg))
+          )
           
           case server_fun do
             :cast -> actor(pid)
             :call -> result
           end
-        end
-      )
+      end
     end
   end
 
@@ -210,7 +200,7 @@ defmodule ExActor do
   end
 
   defp def_fun_interface do
-    quote do
+    quote bind_quoted: [] do
       {server_arg, interface_args} = ExActor.interface_args_fun(args, options)
       send_msg = ExActor.msg_payload(name, interface_args)
       interface_args = case server_arg do
@@ -218,14 +208,11 @@ defmodule ExActor do
         _ -> [server_arg | interface_args]
       end
 
-      def(
-        name, 
-        interface_args,
-        [],
-        do: quote do
-          :gen_server.unquote(server_fun)(unquote_splicing(ExActor.server_args(options, :fun, type, send_msg)))
-        end
-      )
+      def unquote(name)(unquote_splicing(interface_args)) do
+        :gen_server.unquote(server_fun)(
+          unquote_splicing(ExActor.server_args(options, :fun, type, send_msg))
+        )
+      end
     end
   end
 
@@ -276,14 +263,22 @@ defmodule ExActor do
   
 
   defp define_handler(type) do
-    quote do
+    quote bind_quoted: [type: type, wrapped_type: wrapper(type)] do
       {state_arg, state_identifier} = ExActor.get_state_identifier(options[:state] || {:_, [], :quoted})
       {handler_name, handler_args} = ExActor.handler_sig(type, msg, state_arg)
       guard = options[:when]
-      if guard, do: guard = [guard], else: guard = []
-      handler_body = ExActor.wrap_handler_body(unquote(wrapper(type)), state_identifier, options[:do])
+      
+      handler_body = ExActor.wrap_handler_body(wrapped_type, state_identifier, options[:do])
 
-      def(handler_name, handler_args, guard, do: handler_body)
+      if guard do
+        def unquote(handler_name)(
+          unquote_splicing(handler_args)
+        ) when unquote(guard), do: unquote(handler_body)
+      else
+        def unquote(handler_name)(
+          unquote_splicing(handler_args)
+        ), do: unquote(handler_body)
+      end
     end
   end
 
@@ -305,10 +300,8 @@ defmodule ExActor do
   
   def wrap_handler_body(handler, state_identifier, body) do
     quote do
-      (
-        unquote(body)
-      ) |>
-      unquote(handler)(unquote(state_identifier))
+      (unquote(body)) 
+      |> unquote(handler)(unquote(state_identifier))
     end
   end
   
