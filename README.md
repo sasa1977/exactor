@@ -75,7 +75,9 @@ use ExActor, initial_state: HashDict.new
 definit do: HashSet.new
 
 # using the input argument
-definit input: x, do: x + 1
+definit(x) do
+  x + 1
+end
 ```
 
 ## Pattern matching

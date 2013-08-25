@@ -9,7 +9,7 @@ defmodule ExActor do
     quote do
       use GenServer.Behaviour
       import ExActor, only: [
-        definit: 1,
+        definit: 1, definit: 2, 
         defcall: 2, defcall: 3,
         defcast: 2, defcast: 3,
         handle_call_response: 2, handle_cast_response: 2,
@@ -78,7 +78,10 @@ defmodule ExActor do
     end
   end
 
-  defmacro definit(opts) do
+  defmacro definit(opts), do: do_definit(opts)
+  defmacro definit(input, opts), do: do_definit([{:input, input} | opts])
+
+  defp do_definit(opts) do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
       def init(unquote_splicing([opts[:input] || quote(do: _)])) do
         initial_state(unquote(opts[:do]))

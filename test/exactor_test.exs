@@ -132,7 +132,11 @@ defmodule ExActor.Test do
 
   defmodule InitialState3 do
     use ExActor
-    definit input: x, do: x + 1
+    
+    definit(x) do
+      x + 1
+    end
+
     defcall get, state: state, do: state
   end
 
