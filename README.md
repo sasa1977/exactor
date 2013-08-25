@@ -75,8 +75,18 @@ use ExActor, initial_state: HashDict.new
 definit do: HashSet.new
 
 # using the input argument
-definit(x) do
+definit x do
   x + 1
+end
+```
+
+## Handling messages
+
+```elixir
+definfo :some_message do
+end
+
+definfo :another_message, state: ... do
 end
 ```
 
@@ -89,9 +99,14 @@ defcall a(x), state: 1, do: ...
 defcall a(x), when: x > 1, do: ...
 defcall a(x), state: state, when: state > 1, do: ...
 defcall a(_), do: ...
+
+definit :something, do: ...
+definit x, when: ..., do: ...
+
+definfo :msg, state: {...}, when: ..., do: ...
 ```
 
-Note: all matches take place at the `handle_call` or `handle_cast` level. The interface function simply passes the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
+Note: all call/cast matches take place at the `handle_call` or `handle_cast` level. The interface function simply passes the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
 
 ## Skipping interface funs
 

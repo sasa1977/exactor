@@ -12,6 +12,7 @@ defmodule ExActor do
         definit: 1, definit: 2, 
         defcall: 2, defcall: 3,
         defcast: 2, defcast: 3,
+        definfo: 2, definfo: 3,
         handle_call_response: 2, handle_cast_response: 2,
         initial_state: 1, new_state: 1, reply: 2
       ]
@@ -83,8 +84,43 @@ defmodule ExActor do
 
   defp do_definit(opts) do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
-      def init(unquote_splicing([opts[:input] || quote(do: _)])) do
-        initial_state(unquote(opts[:do]))
+      if (opts[:when]) do
+        def init(unquote_splicing([opts[:input] || quote(do: _)])) when unquote(opts[:when]) do
+          initial_state(unquote(opts[:do]))
+        end
+      else
+        def init(unquote_splicing([opts[:input] || quote(do: _)])) do
+          initial_state(unquote(opts[:do]))
+        end
+      end
+    end
+  end
+
+  defmacro definfo(msg, options), do: impl_definfo(msg, options)
+  defmacro definfo(msg, opts1, opts2) do
+    impl_definfo(msg, opts1 ++ opts2)
+  end
+
+  defp impl_definfo(msg, options) do
+    quote bind_quoted: [
+      msg: Macro.escape(msg, unquote: true), 
+      options: Macro.escape(options, unquote: true)
+    ] do
+      
+      {state_arg, state_identifier} = ExActor.get_state_identifier(
+        options[:state] || quote(do: _)
+      )
+      
+      if options[:when] do
+        def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
+          (unquote(options[:do])) 
+          |> handle_cast_response(unquote(state_identifier))
+        end
+      else
+        def handle_info(unquote(msg), unquote(state_arg)) do
+          (unquote(options[:do])) 
+          |> handle_cast_response(unquote(state_identifier))
+        end
       end
     end
   end
@@ -278,11 +314,11 @@ defmodule ExActor do
     {:handle_cast, [msg, state_arg], state_identifier}
   end
 
-  defp get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
+  def get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
     {state_arg, state_identifier}
   end
 
-  defp get_state_identifier(any) do
+  def get_state_identifier(any) do
     get_state_identifier({:=, [], [any, {:___generated_state, [], nil}]})
   end
   

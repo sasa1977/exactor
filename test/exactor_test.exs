@@ -33,6 +33,18 @@ defmodule ExActor.Test do
       from <- :from_ok
       :ok
     end
+
+    definfo {:msg1, from} do
+      from <- :reply_msg1
+    end
+
+    definfo {:msg_get, from}, state: state do
+      from <- state
+    end
+
+    definfo sender, when: is_pid(sender) do
+      sender <- :echo
+    end
   end
   
   test "basic" do    
@@ -71,6 +83,16 @@ defmodule ExActor.Test do
 
     assert TestActor.test_from(actor) == :ok
     assert_receive :from_ok
+
+    actor <- {:msg1, self}
+    assert_receive :reply_msg1
+
+    TestActor.set(actor, 10)
+    actor <- {:msg_get, self}
+    assert_receive 10
+
+    actor <- self
+    assert_receive :echo
   end
 
   test "actor start" do
@@ -134,15 +156,11 @@ defmodule ExActor.Test do
 
   defmodule InitialState2 do
     use ExActor
-    definit do: HashSet.new
-    defcall get, state: state, do: state
-  end
 
-  defmodule InitialState3 do
-    use ExActor
-    
-    definit(x) do
-      x + 1
+    definit 1, do: :one
+    definit x, when: x < 3, do: :two
+    definit do
+      :rest
     end
 
     defcall get, state: state, do: state
@@ -150,8 +168,9 @@ defmodule ExActor.Test do
 
   test "initial state" do
     assert (InitialState1.start |> elem(1) |> InitialState1.get) == HashDict.new
-    assert (InitialState2.start |> elem(1) |> InitialState2.get) == HashSet.new
-    assert (InitialState3.start(1) |> elem(1) |> InitialState3.get) == 2
+    assert (InitialState2.start(1) |> elem(1) |> InitialState2.get) == :one
+    assert (InitialState2.start(2) |> elem(1) |> InitialState2.get) == :two
+    assert (InitialState2.start(3) |> elem(1) |> InitialState2.get) == :rest
   end
 
 
