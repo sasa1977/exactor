@@ -28,6 +28,11 @@ defmodule ExActor.Test do
         {line, hd(System.stacktrace) |> elem(3)}
       end
     end
+
+    defcall test_from, from: {from, _} do
+      from <- :from_ok
+      :ok
+    end
   end
   
   test "basic" do    
@@ -63,6 +68,9 @@ defmodule ExActor.Test do
     {line, exception} = TestActor.test_exc(actor)
     assert (exception[:file] |> Path.basename) == 'exactor_test.exs'
     assert exception[:line] == line
+
+    assert TestActor.test_from(actor) == :ok
+    assert_receive :from_ok
   end
 
   test "actor start" do

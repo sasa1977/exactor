@@ -247,8 +247,7 @@ defmodule ExActor do
 
   defp define_handler(type) do
     quote bind_quoted: [type: type, wrapped_type: wrapper(type)] do
-      {state_arg, state_identifier} = ExActor.get_state_identifier(options[:state] || {:_, [], :quoted})
-      {handler_name, handler_args} = ExActor.handler_sig(type, msg, state_arg)
+      {handler_name, handler_args, state_identifier} = ExActor.handler_sig(type, options, msg)
       guard = options[:when]
       
       handler_body = ExActor.wrap_handler_body(wrapped_type, state_identifier, options[:do])
@@ -265,19 +264,25 @@ defmodule ExActor do
     end
   end
 
-  def handler_sig(:defcall, msg, state_arg) do
-    {:handle_call, [msg, quote(do: _from), state_arg]}
+  def handler_sig(:defcall, options, msg) do
+    {state_arg, state_identifier} = 
+      get_state_identifier(options[:state] || {:_, [], :quoted})
+
+    {:handle_call, [msg, options[:from] || quote(do: _from), state_arg], state_identifier}
   end
 
-  def handler_sig(:defcast, msg, state_arg) do
-    {:handle_cast, [msg, state_arg]}
+  def handler_sig(:defcast, options, msg) do
+    {state_arg, state_identifier} = 
+      get_state_identifier(options[:state] || {:_, [], :quoted})
+
+    {:handle_cast, [msg, state_arg], state_identifier}
   end
 
-  def get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
+  defp get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
     {state_arg, state_identifier}
   end
 
-  def get_state_identifier(any) do
+  defp get_state_identifier(any) do
     get_state_identifier({:=, [], [any, {:___generated_state, [], nil}]})
   end
   

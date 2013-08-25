@@ -100,6 +100,14 @@ Note: all matches take place at the `handle_call` or `handle_cast` level. The in
 defcall unexported, export: false, do: :unexported
 ```
 
+## Using from
+
+```
+defcall a(...), from: {from_pid, ref} do
+  ...
+end
+```
+
 ## Runtime friendliness
 
 May be useful if calls/casts simply delegate to some module/functions.
