@@ -27,7 +27,9 @@ Actor.get(act)         # 3
 
 ```elixir
 defmodule SingletonActor do
-  use ExActor, export: :singleton   # The actor process will be locally registered
+  # The actor process will be locally registered under an alias
+  # given via export option
+  use ExActor, export: :some_registered_name
 
   defcall get, state: state, do: state
   defcast set(x), do: new_state(x)
