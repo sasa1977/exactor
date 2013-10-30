@@ -14,7 +14,7 @@ defmodule ExActor do
         defcast: 2, defcast: 3,
         definfo: 2, definfo: 3,
         handle_call_response: 2, handle_cast_response: 2,
-        initial_state: 1, new_state: 1, reply: 2
+        initial_state: 1, new_state: 1, reply: 2, set_and_reply: 2
       ]
       unquote(interface_funs(__CALLER__))
       
@@ -332,9 +332,31 @@ defmodule ExActor do
   defp wrapper(:defcast), do: :handle_cast_response
   defp wrapper(:defcall), do: :handle_call_response
   
-  def reply(response, new_state) do {:reply, response, new_state} end
-  def initial_state(state) do {:ok, state} end
-  def new_state(state) do {:noreply, state} end
+  defmacro reply(response, new_state) do 
+    IO.puts "reply/2 is deprecated. Please use set_and_reply/2"
+
+    quote do
+      {:reply, unquote(response), unquote(new_state)} 
+    end
+  end
+
+  defmacro set_and_reply(new_state, response) do
+    quote do
+      {:reply, unquote(response), unquote(new_state)}
+    end
+  end
+
+  defmacro initial_state(state) do 
+    quote do
+      {:ok, unquote(state)}
+    end
+  end
+
+  defmacro new_state(state) do
+    quote do
+      {:noreply, unquote(state)}
+    end
+  end
 
   def handle_call_response({:reply, _, _} = r, _) do r end
   def handle_call_response({:reply, _, _, _} = r, _) do r end

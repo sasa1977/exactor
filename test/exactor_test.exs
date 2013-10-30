@@ -17,7 +17,7 @@ defmodule ExActor.Test do
     
     defcall reply_leave_state, do: 3
     defcast leave_state, do: 4
-    defcall full_reply, do: reply(5,6)
+    defcall full_reply, do: set_and_reply(6, 5)
     
     defcall me, do: this
     

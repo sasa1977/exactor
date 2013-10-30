@@ -44,7 +44,7 @@ SingletonActor.get
 
 ```elixir
 defcall a, state: state, do: 5                # responds 5, doesn't change state
-defcall b, do: reply(5, 6)                    # responds 5, sets new state to 6
+defcall b, do: set_and_reply(6, 5)            # responds 5, sets new state to 6
 defcall c, do: {:reply, response, new_state}  # standard gen_server response is left intact
 
 defcast c, do: :ok                            # ignores response, doesn't change state
