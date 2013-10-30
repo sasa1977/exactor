@@ -1,13 +1,19 @@
 defmodule ExActor.Mixfile do
-   use Mix.Project 
+  use Mix.Project 
 
-   def project do
-     [project: "ExActor", version: "0.1", app: :exactor, deps: deps] 
-   end
+  def project do
+    [
+      project: "ExActor", 
+      version: "0.1", 
+      elixir: "~> 0.10.3",
+      app: :exactor, 
+      deps: deps
+    ] 
+  end
 
-   def application, do: []
+  def application, do: []
    
-   def deps do
-     []
-   end
+  def deps do
+    []
+  end
 end
