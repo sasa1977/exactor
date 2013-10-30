@@ -3,6 +3,8 @@
 Simplified implementation and usage of `gen_server` based actors in Elixir.
 This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate, and changes some semantics of the handle_call/cast responses.
 
+If you're new to Erlang, and are not familiar on how gen_server works, I strongly suggest you learn about it first. It's really not that hard, and you can use [Elixir docs](http://elixir-lang.org/docs/stable/GenServer.Behaviour.html) as the starting point. Once you're familiar with gen_server, you can use ExActor to make your actors (gen_servers) more compact.
+
 Status: I use it in production.
 
 ## Basic usage
