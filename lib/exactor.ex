@@ -18,7 +18,7 @@ defmodule ExActor do
       ]
       unquote(interface_funs(__CALLER__))
       
-      exported = HashSet.new
+      @exported HashSet.new
     end
   end
   
@@ -182,12 +182,12 @@ defmodule ExActor do
         _ -> 0
       end
 
-      unless options[:export] == false or HashSet.member?(exported, {name, arity}) do
+      unless options[:export] == false or HashSet.member?(@exported, {name, arity}) do
         server_fun = unquote(server_fun(type))
         unquote(def_tupmod_interface)
         unquote(def_fun_interface)
 
-        exported = HashSet.put(exported, {name, arity})
+        @exported HashSet.put(@exported, {name, arity})
       end
     end
   end
@@ -206,7 +206,7 @@ defmodule ExActor do
           )
           
           case server_fun do
-            :cast -> actor(pid)
+            :cast -> actor(var!(pid, ExActor))
             :call -> result
           end
       end
@@ -215,7 +215,7 @@ defmodule ExActor do
 
   def interface_args_obj(args), do: {server_arg_obj, stub_args(args)}
   defp server_arg_obj do
-    quote(do: {module, :exactor_tupmod, pid})
+    quote(do: {module, :exactor_tupmod, var!(pid, ExActor)})
   end
 
   defp def_fun_interface do
