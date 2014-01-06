@@ -142,3 +142,41 @@ defmodule DynActor do
   end
 end
 ```
+
+
+## Simplified data abstraction delegation
+
+Macro `delegate_to` is provided to shorten the definition when the state is implemented as a functional data abstraction, and operations simply delegate to that module. Here's an example:
+
+```elixir
+defmodule HashDictActor do
+  use ExActor
+
+  delegate_to HashDict do
+    init
+    query get/2
+    trans put/3
+  end
+end
+```
+
+This is equivalent of:
+
+```elixir
+defmodule HashDictActor do
+  use ExActor
+
+  definit do: HashDict.new
+  
+  defcall get(k), state: state do
+    HashDict.get(state, k)
+  end
+
+  defcast put(k, v), state:state do
+    HashDict.put(state, k, v)
+    |> new_state
+  end
+end
+```
+
+You can freely mix `delegate_to` with other macros, such as `defcall`, `defcast`, and others.

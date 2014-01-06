@@ -216,4 +216,30 @@ defmodule ExActor.Test do
     DynActor.set(pid, 1)
     assert DynActor.get(pid) == 1
   end
+
+
+  defmodule HashDictActor do
+    use ExActor
+
+    delegate_to HashDict do
+      init
+      query get/2
+      query size/1
+      trans put/3
+    end
+
+    defcall normal_call, do: 2
+  end
+
+  test "wrapper" do
+    {:ok, actor} = HashDictActor.start
+    
+    assert HashDictActor.get(actor, :a) == nil
+    assert HashDictActor.size(actor) == 0
+
+    HashDictActor.put(actor, :a, 1)
+    assert HashDictActor.get(actor, :a) == 1
+    assert HashDictActor.size(actor) == 1
+    assert HashDictActor.normal_call(actor) == 2
+  end
 end
