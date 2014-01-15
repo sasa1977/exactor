@@ -30,20 +30,20 @@ defmodule ExActor.Test do
     end
 
     defcall test_from, from: {from, _} do
-      from <- :from_ok
+      send(from, :from_ok)
       :ok
     end
 
     definfo {:msg1, from} do
-      from <- :reply_msg1
+      send(from, :reply_msg1)
     end
 
     definfo {:msg_get, from}, state: state do
-      from <- state
+      send(from, state)
     end
 
     definfo sender, when: is_pid(sender) do
-      sender <- :echo
+      send(sender, :echo)
     end
   end
   
@@ -84,14 +84,14 @@ defmodule ExActor.Test do
     assert TestActor.test_from(actor) == :ok
     assert_receive :from_ok
 
-    actor <- {:msg1, self}
+    send(actor, {:msg1, self})
     assert_receive :reply_msg1
 
     TestActor.set(actor, 10)
-    actor <- {:msg_get, self}
+    send(actor, {:msg_get, self})
     assert_receive 10
 
-    actor <- self
+    send(actor, self)
     assert_receive :echo
   end
 
