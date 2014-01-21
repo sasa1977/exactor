@@ -12,9 +12,11 @@ Status: I use it in production.
 ```elixir
 defmodule Actor do
   use ExActor
+  @ten_seconds 10_000
   
   defcast inc(x), state: state, do: new_state(state + x)
   defcall get, state: state, do: state
+  defcall long_call, state: state, timeout: @ten_seconds, do: heavy_transformation(state)
 end
 
 # initial state is set to start argument
