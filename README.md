@@ -15,6 +15,7 @@ defmodule Actor do
   
   defcast inc(x), state: state, do: new_state(state + x)
   defcall get, state: state, do: state
+  defcall long_call, state: state, timeout: :timer.seconds(10), do: heavy_transformation(state)
 end
 
 # initial state is set to start argument
