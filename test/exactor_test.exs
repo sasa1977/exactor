@@ -18,9 +18,7 @@ defmodule ExActor.Test do
     defcall reply_leave_state, do: 3
     defcast leave_state, do: 4
     defcall full_reply, do: set_and_reply(6, 5)
-    
-    defcall me, do: this
-    
+        
     defcall test_exc do
       try do
         throw(__ENV__.line) 
@@ -72,11 +70,7 @@ defmodule ExActor.Test do
     
     assert TestActor.full_reply(actor) == 5
     assert TestActor.get(actor) == 6
-    
-    tupmod = TestActor.actor(actor)
-    assert tupmod.set(7).get == 7
-    assert tupmod.me == tupmod
-    
+        
     {line, exception} = TestActor.test_exc(actor)
     assert (exception[:file] |> Path.basename) == 'exactor_test.exs'
     assert exception[:line] == line
@@ -95,11 +89,6 @@ defmodule ExActor.Test do
     assert_receive :echo
   end
 
-  test "actor start" do
-    assert TestActor.actor_start(0).set(1).get == 1
-    assert TestActor.actor_start_link(0).set(2).get == 2
-  end
-  
   test "starting" do
     {:ok, actor} = TestActor.start
     assert TestActor.get(actor) == nil

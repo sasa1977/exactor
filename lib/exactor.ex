@@ -33,21 +33,6 @@ defmodule ExActor do
         :gen_server.start_link(unquote_splicing(start_args(caller)))
       end
 
-      def actor_start(args // nil, options // []) do
-        start(args, options) |> response_to_actor
-      end
-
-      def actor_start_link(args // nil, options // []) do
-        start_link(args, options) |> response_to_actor
-      end
-
-      defp response_to_actor({:ok, pid}), do: actor(pid)
-      defp response_to_actor(any), do: any
-      
-      def this, do: actor(self)
-      def pid({module, pid}) when module === __MODULE__, do: pid
-      def actor(pid), do: {__MODULE__, :exactor_tupmod, pid}
-
       unquote(def_initializer(caller))
     end
   end
@@ -185,38 +170,11 @@ defmodule ExActor do
 
       unless options[:export] == false or HashSet.member?(@exported, {name, arity}) do
         server_fun = unquote(server_fun(type))
-        unquote(def_tupmod_interface)
         unquote(def_fun_interface)
 
         @exported HashSet.put(@exported, {name, arity})
       end
     end
-  end
-
-  defp def_tupmod_interface do
-    quote bind_quoted: [] do
-      {server_arg, interface_args} = ExActor.interface_args_obj(args)
-      send_msg = ExActor.msg_payload(name, interface_args)
-      interface_args = interface_args ++ [server_arg]
-
-      def unquote(name)(unquote_splicing(interface_args)) do
-        server_fun = unquote(server_fun)
-          
-          result = :gen_server.unquote(server_fun)(
-            unquote_splicing(ExActor.server_args(options, :obj, type, send_msg))
-          )
-          
-          case server_fun do
-            :cast -> actor(var!(pid, ExActor))
-            :call -> result
-          end
-      end
-    end
-  end
-
-  def interface_args_obj(args), do: {server_arg_obj, stub_args(args)}
-  defp server_arg_obj do
-    quote(do: {module, :exactor_tupmod, var!(pid, ExActor)})
   end
 
   defp def_fun_interface do
@@ -230,7 +188,7 @@ defmodule ExActor do
 
       def unquote(name)(unquote_splicing(interface_args)) do
         :gen_server.unquote(server_fun)(
-          unquote_splicing(ExActor.server_args(options, :fun, type, send_msg))
+          unquote_splicing(ExActor.server_args(options, type, send_msg))
         )
       end
     end
@@ -259,12 +217,11 @@ defmodule ExActor do
   defp server_fun(:defcast), do: :cast
   defp server_fun(:defcall), do: :call
   
-  def server_args(options, tupmod, type, msg) do
-    [server_ref(options, tupmod), msg] ++ timeout_arg(options, type)
+  def server_args(options, type, msg) do
+    [server_ref(options), msg] ++ timeout_arg(options, type)
   end
 
-  defp server_ref(_, :obj), do: quote(do: pid)
-  defp server_ref(options, :fun) do
+  defp server_ref(options) do
     case options[:export] do
       default when default in [nil, false, true] -> quote(do: server)
       local when is_atom(local) -> local
