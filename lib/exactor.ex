@@ -93,7 +93,7 @@ defmodule ExActor do
       options: Macro.escape(options, unquote: true)
     ] do
       
-      {state_arg, state_identifier} = ExActor.get_state_identifier(
+      {state_arg, state_identifier} = ExActor.Helper.get_state_identifier(
         options[:state] || quote(do: _)
       )
       
@@ -150,15 +150,10 @@ defmodule ExActor do
         |> Keyword.merge(unquote(Macro.escape(options, unquote: true)))
 
       type = unquote(Macro.escape(type, unquote: true))
-      msg = ExActor.msg_payload(name, args)
+      msg = ExActor.Helper.msg_payload(name, args)
     end
   end
-
-  def msg_payload(function, nil), do: function
-  def msg_payload(function, []), do: function
-  def msg_payload(function, args), do: quote(do: {unquote_splicing([function | args])})
-
-
+  
 
   defp define_interface(type) do
     quote do
@@ -170,17 +165,17 @@ defmodule ExActor do
 
       unless options[:export] == false or HashSet.member?(@exported, {name, arity}) do
         server_fun = unquote(server_fun(type))
-        unquote(def_fun_interface)
+        unquote(quoted_interface)
 
         @exported HashSet.put(@exported, {name, arity})
       end
     end
   end
 
-  defp def_fun_interface do
+  defp quoted_interface do
     quote bind_quoted: [] do
-      {server_arg, interface_args} = ExActor.interface_args_fun(args, options)
-      send_msg = ExActor.msg_payload(name, interface_args)
+      {server_arg, interface_args} = ExActor.Helper.interface_args(args, options)
+      send_msg = ExActor.Helper.msg_payload(name, interface_args)
       interface_args = case server_arg do
         nil -> interface_args
         _ -> [server_arg | interface_args]
@@ -188,63 +183,23 @@ defmodule ExActor do
 
       def unquote(name)(unquote_splicing(interface_args)) do
         :gen_server.unquote(server_fun)(
-          unquote_splicing(ExActor.server_args(options, type, send_msg))
+          unquote_splicing(ExActor.Helper.server_args(options, type, send_msg))
         )
       end
     end
   end
 
-  def interface_args_fun(args, options), do: {server_arg_fun(options), stub_args(args)}
-
-  defp server_arg_fun(options) do
-    cond do
-      (options[:export] || true) == true -> quote(do: server)
-      true -> nil
-    end
-  end
-
-  defp stub_args(args) do
-    Enum.reduce(args, {0, []}, fn(_, {index, args}) ->
-      {
-        index + 1,
-        [{:"arg#{index}", [], nil} | args]
-      }
-    end)
-    |> elem(1)
-    |> Enum.reverse
-  end
   
   defp server_fun(:defcast), do: :cast
   defp server_fun(:defcall), do: :call
   
-  def server_args(options, type, msg) do
-    [server_ref(options), msg] ++ timeout_arg(options, type)
-  end
-
-  defp server_ref(options) do
-    case options[:export] do
-      default when default in [nil, false, true] -> quote(do: server)
-      local when is_atom(local) -> local
-      {:local, local} -> local
-      {:global, _} = global -> global
-    end 
-  end
   
-  defp timeout_arg(options, type) do
-    case {type, options[:timeout]} do
-      {:defcall, timeout} when timeout != nil ->
-        [timeout]
-      _ -> []
-    end
-  end
-  
-
   defp define_handler(type) do
     quote bind_quoted: [type: type, wrapped_type: wrapper(type)] do
-      {handler_name, handler_args, state_identifier} = ExActor.handler_sig(type, options, msg)
+      {handler_name, handler_args, state_identifier} = ExActor.Helper.handler_sig(type, options, msg)
       guard = options[:when]
       
-      handler_body = ExActor.wrap_handler_body(wrapped_type, state_identifier, options[:do])
+      handler_body = ExActor.Helper.wrap_handler_body(wrapped_type, state_identifier, options[:do])
 
       if guard do
         def unquote(handler_name)(
@@ -258,34 +213,6 @@ defmodule ExActor do
     end
   end
 
-  def handler_sig(:defcall, options, msg) do
-    {state_arg, state_identifier} = 
-      get_state_identifier(options[:state] || {:_, [], :quoted})
-
-    {:handle_call, [msg, options[:from] || quote(do: _from), state_arg], state_identifier}
-  end
-
-  def handler_sig(:defcast, options, msg) do
-    {state_arg, state_identifier} = 
-      get_state_identifier(options[:state] || {:_, [], :quoted})
-
-    {:handle_cast, [msg, state_arg], state_identifier}
-  end
-
-  def get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
-    {state_arg, state_identifier}
-  end
-
-  def get_state_identifier(any) do
-    get_state_identifier({:=, [], [any, {:___generated_state, [], nil}]})
-  end
-  
-  def wrap_handler_body(handler, state_identifier, body) do
-    quote do
-      (unquote(body)) 
-      |> unquote(handler)(unquote(state_identifier))
-    end
-  end
   
   defp wrapper(:defcast), do: :handle_cast_response
   defp wrapper(:defcall), do: :handle_call_response
