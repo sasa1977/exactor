@@ -78,8 +78,8 @@ defmodule ExActor.Helper do
   def wrap_handler_body(handler, state_identifier, body) do
     quote do
       (unquote(body)) 
-      |> unquote(handler)(unquote(state_identifier))
-      |> ExActor.propagate
+      |> ExActor.ResponseHandler.unquote(handler)(unquote(state_identifier))
+      |> ExActor.ResponseHandler.dummy_wrap
     end
   end
 end

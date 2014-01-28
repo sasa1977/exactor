@@ -140,17 +140,14 @@ defmodule ExActor.Macros do
         options[:state] || quote(do: _)
       )
       
+      handler_body = ExActor.Helper.wrap_handler_body(:handle_cast_response, state_identifier, options[:do])
       if options[:when] do
         def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
-          (unquote(options[:do])) 
-          |> handle_cast_response(unquote(state_identifier))
-          |> ExActor.propagate
+          unquote(handler_body)
         end
       else
         def handle_info(unquote(msg), unquote(state_arg)) do
-          (unquote(options[:do])) 
-          |> handle_cast_response(unquote(state_identifier))
-          |> ExActor.propagate
+          unquote(handler_body)
         end
       end
     end
@@ -188,44 +185,6 @@ defmodule ExActor.Macros do
     end
   end
 
-
-
-  def handle_call_response({ExActor, :reply, response}, state), do: {:reply, response, state}
-  def handle_call_response({ExActor, :noreply}, state), do: {:noreply, state}
-  def handle_call_response(response, state) do
-    if proper_call_response(response) do
-      response
-    else
-      IO.write "Implicit reply is deprecated. Please use standard gen_server replies or reply(response)} instead.\n#{Exception.format_stacktrace}"
-      {:reply, response, state}
-    end
-  end
-
-  defp proper_call_response({:reply, _, _}), do: true
-  defp proper_call_response({:reply, _, _, _}), do: true
-  defp proper_call_response({:noreply, _}), do: true
-  defp proper_call_response({:noreply, _, _}), do: true
-  defp proper_call_response({:stop, _, _}), do: true
-  defp proper_call_response({:stop, _, _, _}), do: true
-  defp proper_call_response(_), do: false
-  
-
-
-  def handle_cast_response({ExActor, :noreply}, state), do: {:noreply, state}
-  def handle_cast_response(response, state) do
-    if proper_cast_response(response) do
-      response
-    else
-      IO.write "Implicit reply is deprecated. Please use gen_server replies or :noreply instead.\n#{Exception.format_stacktrace}"
-      {:noreply, state} 
-    end
-  end
-
-  defp proper_cast_response({:noreply, _}), do: true
-  defp proper_cast_response({:noreply, _, _}), do: true
-  defp proper_cast_response({:stop, _, _}), do: true
-  defp proper_cast_response(_), do: true
-  
 
 
   defmacro delegate_to(target_module, opts) do
