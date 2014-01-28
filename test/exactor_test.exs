@@ -1,8 +1,8 @@
-defmodule ExActor.Test do
+defmodule ExActorTest do
   use ExUnit.Case 
   
   defmodule TestActor do
-    use ExActor
+    use ExActor.Tolerant
     
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: reply(state)
@@ -114,7 +114,7 @@ defmodule ExActor.Test do
   
   
   defmodule SingletonActor do
-    use ExActor, export: :singleton
+    use ExActor.Tolerant, export: :singleton
     
     defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
@@ -128,7 +128,7 @@ defmodule ExActor.Test do
   
   
   defmodule GlobalSingletonActor do
-    use ExActor, export: {:global, :global_singleton}
+    use ExActor.Tolerant, export: {:global, :global_singleton}
     
     defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
@@ -142,12 +142,12 @@ defmodule ExActor.Test do
 
 
   defmodule InitialState1 do
-    use ExActor, initial_state: HashDict.new
+    use ExActor.Tolerant, initial_state: HashDict.new
     defcall get, state: state, do: reply(state)
   end
 
   defmodule InitialState2 do
-    use ExActor
+    use ExActor.Tolerant
 
     definit 1, do: :one
     definit x, when: x < 3, do: :two
@@ -167,7 +167,7 @@ defmodule ExActor.Test do
 
 
   defmodule PatternMatch do
-    use ExActor
+    use ExActor.Tolerant
 
     defcall test(1), do: reply(:one)
     defcall test(2), do: reply(:two)
@@ -188,7 +188,7 @@ defmodule ExActor.Test do
 
 
   defmodule DynActor do
-    use ExActor
+    use ExActor.Tolerant
 
     lc op inlist [:get] do
       defcall unquote(op), state: state do
@@ -211,7 +211,7 @@ defmodule ExActor.Test do
 
 
   defmodule HashDictActor do
-    use ExActor
+    use ExActor.Tolerant
     import ExActor.Delegator
 
     delegate_to HashDict do

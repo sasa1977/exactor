@@ -82,4 +82,16 @@ defmodule ExActor.Helper do
       |> ExActor.ResponseHandler.dummy_wrap
     end
   end
+
+
+
+  def init_global_options(caller, opts) do
+    Module.put_attribute(caller.module, :exactor_global_options, opts || [])
+  end
+
+  def init_exported do
+    quote do
+      @exported HashSet.new
+    end
+  end
 end

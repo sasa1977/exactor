@@ -4,16 +4,9 @@ defmodule ExActor do
   """
   
   defmacro __using__(opts) do
-    Module.put_attribute(__CALLER__.module, :exactor_global_options, opts || [])
-    
     quote do
-      use GenServer.Behaviour
-      
-      import ExActor.Operations
-      import ExActor.Responders
-      use ExActor.DefaultInterface
-      
-      @exported HashSet.new
+      IO.write "use ExActor is deprecated. Please use explicit ExActor predefine (e.g. ExActor.GenServer) instead.\n#{Exception.format_stacktrace}"
+      use ExActor.GenServer, unquote(opts)
     end
   end
 end

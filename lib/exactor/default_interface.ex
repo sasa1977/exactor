@@ -32,9 +32,13 @@ defmodule ExActor.DefaultInterface do
   end
 
   defp def_initializer(caller) do
-    case Module.get_attribute(caller.module, :exactor_global_options)[:initial_state] do
-      nil -> nil
-      state ->
+    initial_state = 
+      Module.get_attribute(caller.module, :exactor_global_options)
+      |> Dict.fetch(:initial_state)
+
+    case initial_state do
+      :error -> nil
+      {:ok, state} ->
         quote do
           def init(_), do: initial_state(unquote(state))
         end
