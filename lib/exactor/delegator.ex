@@ -1,4 +1,43 @@
 defmodule ExActor.Delegator do
+  @moduledoc """
+  Provides `delegate_to/2` macro that can be used to simplify cases when
+  call/cast operations delegate to another module.
+  """
+
+  @doc """
+  Creates wrapper operations around the `target_module`.
+
+  For example:
+
+      defmodule HashDictActor do
+        use ExActor.GenServer
+        import ExActor.Delegator
+
+        delegate_to HashDict do
+          init
+          query get/2
+          trans put/3
+        end
+      end
+
+  This is the same as:
+
+      defmodule HashDictActor do
+        use ExActor
+
+        definit do: HashDict.new
+        
+        defcall get(k), state: state do
+          HashDict.get(state, k)
+          |> reply
+        end
+
+        defcast put(k, v), state:state do
+          HashDict.put(state, k, v)
+          |> new_state
+        end
+      end
+  """
   defmacro delegate_to(target_module, opts) do
     statements(opts[:do])
     |> Enum.map(&(parse_instruction(target_module, &1)))

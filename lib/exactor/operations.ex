@@ -1,15 +1,38 @@
 defmodule ExActor.Operations do
+  @moduledoc """
+  Macros that can be used for simpler definition of `gen_server` operations 
+  such as casts or calls.
+  """
+
+  @doc false
   defmacro definit(opts), do: do_definit(opts)
-  defmacro definit(input, opts), do: do_definit([{:input, input} | opts])
+
+  @doc """
+  Defines the initializer callback. 
+
+  Examples:
+
+      # ignoring the input argument
+      definit do: HashSet.new
+
+      # using the input argument
+      definit x do
+        x + 1
+      end
+
+      # pattern matching
+      definit x, when: ..., do: ...
+  """
+  defmacro definit(arg, opts), do: do_definit([{:arg, arg} | opts])
 
   defp do_definit(opts) do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
       if (opts[:when]) do
-        def init(unquote_splicing([opts[:input] || quote(do: _)])) when unquote(opts[:when]) do
+        def init(unquote_splicing([opts[:arg] || quote(do: _)])) when unquote(opts[:when]) do
           initial_state(unquote(opts[:do]))
         end
       else
-        def init(unquote_splicing([opts[:input] || quote(do: _)])) do
+        def init(unquote_splicing([opts[:arg] || quote(do: _)])) do
           initial_state(unquote(opts[:do]))
         end
       end
@@ -17,19 +40,64 @@ defmodule ExActor.Operations do
   end
 
 
-
+  @doc false
   defmacro defcast(cast, body) do
     generate_funs(:defcast, cast, body ++ [module: __CALLER__.module])
   end
   
+  @doc """
+  Defines the cast callback clause and a corresponding interface fun.
+
+  Examples:
+
+      defcast operation, do: noreply
+      defcast inc(x), state: state, do: new_state(state + x)
+
+      # omitting interface fun
+      defcast operation, export: false, do: ...
+
+      # pattern matching
+      defcast a(1), do: ...
+      defcast a(2), do: ...
+      defcast a(x), state: 1, do: ...
+      defcast a(x), when: x > 1, do: ...
+      defcast a(x), state: state, when: state > 1, do: ...
+      defcast a(_), do: ...
+  """
   defmacro defcast(cast, options, body) do
     generate_funs(:defcast, cast, Keyword.from_enum(options ++ body  ++ [module: __CALLER__.module]))
   end
-  
+
+
+
+  @doc false
   defmacro defcall(call, body) do
     generate_funs(:defcall, call, body ++ [module: __CALLER__.module])
   end
   
+  @doc """
+  Defines the call callback clause and a corresponding interface fun.
+
+  Examples:
+      
+      defcall operation, do: reply(response)
+      defcall get, state: state, do: reply(state)
+      defcall inc, state: state, do: set_and_reply(state + 1, response)
+
+      # timeout option
+      defcall long_call, state: state, timeout: :timer.seconds(10), do: ...
+
+      # omitting interface fun
+      defcall operation, export: false, do: ...
+
+      # pattern matching
+      defcall a(1), do: ...
+      defcall a(2), do: ...
+      defcall a(x), state: 1, do: ...
+      defcall a(x), when: x > 1, do: ...
+      defcall a(x), state: state, when: state > 1, do: ...
+      defcall a(_), do: ...
+  """
   defmacro defcall(call, options, body) do
     generate_funs(:defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
   end
@@ -125,7 +193,17 @@ defmodule ExActor.Operations do
 
 
 
+  @doc false
   defmacro definfo(msg, options), do: impl_definfo(msg, options)
+
+  @doc """
+  Defines the info callback clause. Responses work just like with casts.
+
+  Examples:
+      
+      definfo :some_message, do: ...
+      definfo :another_message, state: ..., do:
+  """
   defmacro definfo(msg, opts1, opts2) do
     impl_definfo(msg, opts1 ++ opts2)
   end

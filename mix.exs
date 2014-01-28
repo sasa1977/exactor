@@ -7,13 +7,11 @@ defmodule ExActor.Mixfile do
       version: "0.2.0-dev", 
       elixir: ">= 0.12.2",
       app: :exactor, 
-      deps: deps
+      deps: deps(Mix.env)
     ] 
   end
 
   def application, do: []
-   
-  def deps do
-    []
-  end
+
+  defp deps(_), do: []
 end

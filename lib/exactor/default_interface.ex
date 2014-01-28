@@ -1,4 +1,18 @@
 defmodule ExActor.DefaultInterface do
+  @moduledoc """
+  A mixin that provides `start/2` and `start_link/2` interface functions that 
+  can be used to start new instances of the gen_server.
+
+  Examples:
+
+      Actor.start   # same as Actor.start(nil)
+      Actor.start(init_arg)
+      Actor.start(init_arg, gen_server_options)
+
+      Actor.start_link  # same as Actor.start_link(nil)
+      Actor.start_link(init_arg)
+      Actor.start_link(init_arg, gen_server_options)
+  """
   defmacro __using__(_) do
     quote do
       def start(args // nil, options // []) do

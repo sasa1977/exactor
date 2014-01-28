@@ -1,4 +1,6 @@
 defmodule ExActor.Helper do
+  @moduledoc false
+  
   def handler_sig(:defcall, options, msg) do
     {state_arg, state_identifier} = 
       get_state_identifier(options[:state] || {:_, [], :quoted})

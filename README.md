@@ -7,15 +7,22 @@ If you're new to Erlang, and are not familiar on how gen_server works, I strongl
 
 Status: I use it in production.
 
+Online documentation is available [here](http://sasa1977.github.io/exactor/)
+
 ## Basic usage
 
 ```elixir
 defmodule Actor do
-  use ExActor
+  use ExActor.GenServer
+
+  definit do: initial_state(some_state)
   
   defcast inc(x), state: state, do: new_state(state + x)
-  defcall get, state: state, do: state
+
+  defcall get, state: state, do: reply(state)
   defcall long_call, state: state, timeout: :timer.seconds(10), do: heavy_transformation(state)
+
+  definfo :some_message, do: ...
 end
 
 # initial state is set to start argument
@@ -26,15 +33,28 @@ Actor.inc(act, 2)
 Actor.get(act)         # 3
 ```
 
+## Predefines
+
+A predefine is an ExActor mixin that provides some default implementations for 
+`gen_server` callbacks. Following predefines are currently provided:
+
+* `ExActor.GenServer` - All `gen_server` callbacks are provided by GenServer.Behaviour from Elixir standard library.
+* `ExActor.Strict` - All `gen_server` callbacks are provided. The default implementations for all except `code_change` and `terminate` will cause the server to be stopped.
+* `ExActor.Tolerant` - All `gen_server` callbacks are provided. The default implementations ignore all messages without stopping the server.
+* `ExActor.Empty` - No default implementation for `gen_server` callbacks are provided.
+
+It is up to you to decide which predefine you want to use. See online docs for detailed description.
+You can also build your own predefine. Refer to the source code of the existing ones as a template.
+
 ## Singleton actors
 
 ```elixir
 defmodule SingletonActor do
   # The actor process will be locally registered under an alias
   # given via export option
-  use ExActor, export: :some_registered_name
+  use ExActor.GenServer, export: :some_registered_name
 
-  defcall get, state: state, do: state
+  defcall get, state: state, do: reply(state)
   defcast set(x), do: new_state(x)
 end
 
@@ -46,26 +66,30 @@ SingletonActor.get
 ## Handling of return values
 
 ```elixir
-defcall a, state: state, do: 5                # responds 5, doesn't change state
-defcall b, do: set_and_reply(6, 5)            # responds 5, sets new state to 6
-defcall c, do: {:reply, response, new_state}  # standard gen_server response is left intact
+definit do: initial_state(arg)                      # sets initial state
+definit do: {:ok, arg}                              # standard gen_server response
 
-defcast c, do: :ok                            # ignores response, doesn't change state
-defcast d, do: new_state(new_state)           # sets new state
-defcast f, do: {:noreply, new_state}          # standard gen_server response is left intact
+defcall a, state: state, do: reply(response)        # responds 5 but doesn't change state
+defcall b, do: set_and_reply(new_state, response)   # responds and changes state
+defcall c, do: {:reply, response, new_state}        # standard gen_server response
 
-def init(arg), do: initial_state(arg)         # sets initial state
-def init(arg), do: {:ok, arg}                 # standard gen_server response    
+defcast c, do: noreply                              # doesn't change state
+defcast d, do: new_state(new_state)                 # sets new state
+defcast f, do: {:noreply, new_state}                # standard gen_server response
+
+definfo c, do: noreply                              # doesn't change state
+definfo d, do: new_state(new_state)                 # sets new state
+definfo f, do: {:noreply, new_state}                # standard gen_server response    
 ```
     
 ## Simplified starting
     
 ```elixir
-Actor.start         # same as Actor.start(nil)
+Actor.start                           # same as Actor.start(nil)
 Actor.start(init_arg)
 Actor.start(init_arg, options)
 
-Actor.start_link
+Actor.start_link                      # same as Actor.start_link(nil)
 Actor.start_link(init_arg)
 Actor.start_link(init_arg, options)
 ```
@@ -74,7 +98,7 @@ Actor.start_link(init_arg, options)
 
 ```elixir
 # define initial state
-use ExActor, initial_state: HashDict.new
+use ExActor.GenServer, initial_state: HashDict.new
 
 # alternatively as the function
 definit do: HashSet.new
@@ -82,17 +106,15 @@ definit do: HashSet.new
 # using the input argument
 definit x do
   x + 1
+  |> initial_state
 end
 ```
 
 ## Handling messages
 
 ```elixir
-definfo :some_message do
-end
-
-definfo :another_message, state: ... do
-end
+definfo :some_message, do:
+definfo :another_message, state: ..., do:
 ```
 
 ## Pattern matching
@@ -134,7 +156,7 @@ May be useful if calls/casts simply delegate to some module/functions.
 
 ```elixir
 defmodule DynActor do
-  use ExActor
+  use ExActor.GenServer
 
   lc op inlist [:op1, :op2] do
     defcall unquote(op), state: state do
@@ -151,7 +173,8 @@ Macro `delegate_to` is provided to shorten the definition when the state is impl
 
 ```elixir
 defmodule HashDictActor do
-  use ExActor
+  use ExActor.GenServer
+  import ExActor.Delegator
 
   delegate_to HashDict do
     init
@@ -165,7 +188,7 @@ This is equivalent of:
 
 ```elixir
 defmodule HashDictActor do
-  use ExActor
+  use ExActor.GenServer
 
   definit do: HashDict.new
   
