@@ -79,6 +79,7 @@ defmodule ExActor.Helper do
     quote do
       (unquote(body)) 
       |> unquote(handler)(unquote(state_identifier))
+      |> ExActor.propagate
     end
   end
 end

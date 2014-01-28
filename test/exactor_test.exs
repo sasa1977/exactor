@@ -5,43 +5,46 @@ defmodule ExActor.Test do
     use ExActor
     
     defcast set(x), do: new_state(x)
-    defcall get, state: state, do: state
+    defcall get, state: state, do: reply(state)
     
     defcast pm_set, state: 2, do: new_state(:two)
     defcast pm_set, state: 3, do: new_state(:three)
     
-    defcall timeout, timeout: 10, do: :timer.sleep(100)
+    defcall timeout, timeout: 10, do: (:timer.sleep(100); noreply)
     
-    defcall unexported, export: false, do: :unexported
+    defcall unexported, export: false, do: reply(:unexported)
     def my_unexported(server), do: :gen_server.call(server, :unexported)
     
-    defcall reply_leave_state, do: 3
-    defcast leave_state, do: 4
+    defcall reply_leave_state, do: reply(3)
+    defcast leave_state, do: (4; noreply)
     defcall full_reply, do: set_and_reply(6, 5)
         
     defcall test_exc do
       try do
         throw(__ENV__.line) 
       catch _,line ->
-        {line, hd(System.stacktrace) |> elem(3)}
+        reply({line, hd(System.stacktrace) |> elem(3)})
       end
     end
 
     defcall test_from, from: {from, _} do
       send(from, :from_ok)
-      :ok
+      reply(:ok)
     end
 
     definfo {:msg1, from} do
       send(from, :reply_msg1)
+      noreply
     end
 
     definfo {:msg_get, from}, state: state do
       send(from, state)
+      noreply
     end
 
     definfo sender, when: is_pid(sender) do
       send(sender, :echo)
+      noreply
     end
   end
   
@@ -113,7 +116,7 @@ defmodule ExActor.Test do
   defmodule SingletonActor do
     use ExActor, export: :singleton
     
-    defcall get, state: state, do: state
+    defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
   end
   
@@ -127,7 +130,7 @@ defmodule ExActor.Test do
   defmodule GlobalSingletonActor do
     use ExActor, export: {:global, :global_singleton}
     
-    defcall get, state: state, do: state
+    defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
   end
   
@@ -140,7 +143,7 @@ defmodule ExActor.Test do
 
   defmodule InitialState1 do
     use ExActor, initial_state: HashDict.new
-    defcall get, state: state, do: state
+    defcall get, state: state, do: reply(state)
   end
 
   defmodule InitialState2 do
@@ -152,7 +155,7 @@ defmodule ExActor.Test do
       :rest
     end
 
-    defcall get, state: state, do: state
+    defcall get, state: state, do: reply(state)
   end
 
   test "initial state" do
@@ -166,12 +169,12 @@ defmodule ExActor.Test do
   defmodule PatternMatch do
     use ExActor
 
-    defcall test(1), do: :one
-    defcall test(2), do: :two
-    defcall test(x), when: x < 4, do: :three
-    defcall test(_), state: 4, do: :four
-    defcall test(_), state: state, when: state < 6, do: :five
-    defcall test(_), do: :rest
+    defcall test(1), do: reply(:one)
+    defcall test(2), do: reply(:two)
+    defcall test(x), when: x < 4, do: reply(:three)
+    defcall test(_), state: 4, do: reply(:four)
+    defcall test(_), state: state, when: state < 6, do: reply(:five)
+    defcall test(_), do: reply(:rest)
   end
 
   test "pattern matching" do
@@ -189,7 +192,7 @@ defmodule ExActor.Test do
 
     lc op inlist [:get] do
       defcall unquote(op), state: state do
-        state
+        reply(state)
       end
     end
 
@@ -217,7 +220,7 @@ defmodule ExActor.Test do
       trans put/3
     end
 
-    defcall normal_call, do: 2
+    defcall normal_call, do: reply(2)
   end
 
   test "wrapper" do

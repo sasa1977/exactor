@@ -144,11 +144,13 @@ defmodule ExActor.Macros do
         def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
           (unquote(options[:do])) 
           |> handle_cast_response(unquote(state_identifier))
+          |> ExActor.propagate
         end
       else
         def handle_info(unquote(msg), unquote(state_arg)) do
           (unquote(options[:do])) 
           |> handle_cast_response(unquote(state_identifier))
+          |> ExActor.propagate
         end
       end
     end
@@ -162,11 +164,9 @@ defmodule ExActor.Macros do
     end
   end
 
-  defmacro reply(response, new_state) do 
-    IO.puts "reply/2 is deprecated. Please use set_and_reply/2"
-
+  defmacro reply(response) do
     quote do
-      {:reply, unquote(response), unquote(new_state)} 
+      {ExActor, :reply, unquote(response)}
     end
   end
 
@@ -182,21 +182,50 @@ defmodule ExActor.Macros do
     end
   end
 
+  defmacro noreply do
+    quote do
+      {ExActor, :noreply}
+    end
+  end
 
 
-  def handle_call_response({:reply, _, _} = r, _) do r end
-  def handle_call_response({:reply, _, _, _} = r, _) do r end
-  def handle_call_response({:noreply, _} = r, _) do r end
-  def handle_call_response({:noreply, _, _} = r, _) do r end
-  def handle_call_response({:stop, _, _} = r, _) do r end
-  def handle_call_response({:stop, _, _, _} = r, _) do r end
-  def handle_call_response(reply, state) do {:reply, reply, state} end
 
-  def handle_cast_response({:noreply, _} = r, _) do r end
-  def handle_cast_response({:noreply, _, _} = r, _) do r end
-  def handle_cast_response({:stop, _, _} = r, _) do r end
-  def handle_cast_response(_, state) do {:noreply, state} end
+  def handle_call_response({ExActor, :reply, response}, state), do: {:reply, response, state}
+  def handle_call_response({ExActor, :noreply}, state), do: {:noreply, state}
+  def handle_call_response(response, state) do
+    if proper_call_response(response) do
+      response
+    else
+      IO.write "Implicit reply is deprecated. Please use standard gen_server replies or reply(response)} instead.\n#{Exception.format_stacktrace}"
+      {:reply, response, state}
+    end
+  end
 
+  defp proper_call_response({:reply, _, _}), do: true
+  defp proper_call_response({:reply, _, _, _}), do: true
+  defp proper_call_response({:noreply, _}), do: true
+  defp proper_call_response({:noreply, _, _}), do: true
+  defp proper_call_response({:stop, _, _}), do: true
+  defp proper_call_response({:stop, _, _, _}), do: true
+  defp proper_call_response(_), do: false
+  
+
+
+  def handle_cast_response({ExActor, :noreply}, state), do: {:noreply, state}
+  def handle_cast_response(response, state) do
+    if proper_cast_response(response) do
+      response
+    else
+      IO.write "Implicit reply is deprecated. Please use gen_server replies or :noreply instead.\n#{Exception.format_stacktrace}"
+      {:noreply, state} 
+    end
+  end
+
+  defp proper_cast_response({:noreply, _}), do: true
+  defp proper_cast_response({:noreply, _, _}), do: true
+  defp proper_cast_response({:stop, _, _}), do: true
+  defp proper_cast_response(_), do: true
+  
 
 
   defmacro delegate_to(target_module, opts) do
@@ -217,7 +246,12 @@ defmodule ExActor.Macros do
   end
 
   defp parse_instruction(target_module, {:query, _, [{:/, _, [{fun, _, _}, arity]}]}) do
-    make_delegate(:defcall, fun, arity, forward_call(target_module, fun, arity))
+    make_delegate(:defcall, fun, arity, 
+      quote do
+        unquote(forward_call(target_module, fun, arity))
+        |> reply
+      end
+    )
   end
 
   defp parse_instruction(target_module, {:trans, _, [{:/, _, [{fun, _, _}, arity]}]}) do

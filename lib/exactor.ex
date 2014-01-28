@@ -15,4 +15,7 @@ defmodule ExActor do
       @exported HashSet.new
     end
   end
+
+  # Temporary, to preserve stack
+  def propagate(x), do: x
 end
