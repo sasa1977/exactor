@@ -4,7 +4,7 @@ defmodule ExActor.Mixfile do
   def project do
     [
       project: "ExActor", 
-      version: "0.2.0-dev", 
+      version: "0.2.0", 
       elixir: ">= 0.12.2",
       app: :exactor, 
       deps: deps(Mix.env)
