@@ -1,21 +1,15 @@
 defmodule ExActor.DefaultInterface do
   defmacro __using__(_) do
     quote do
-      unquote(interface_funs(__CALLER__))
-    end
-  end
-
-  defp interface_funs(caller) do
-    quote do
       def start(args // nil, options // []) do
-        :gen_server.start(unquote_splicing(start_args(caller)))
+        :gen_server.start(unquote_splicing(start_args(__CALLER__)))
       end
       
       def start_link(args // nil, options // []) do
-        :gen_server.start_link(unquote_splicing(start_args(caller)))
+        :gen_server.start_link(unquote_splicing(start_args(__CALLER__)))
       end
 
-      unquote(def_initializer(caller))
+      unquote(def_initializer(__CALLER__))
     end
   end
 

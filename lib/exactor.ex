@@ -9,7 +9,8 @@ defmodule ExActor do
     quote do
       use GenServer.Behaviour
       
-      import ExActor.Macros
+      import ExActor.Operations
+      import ExActor.Responders
       use ExActor.DefaultInterface
       
       @exported HashSet.new

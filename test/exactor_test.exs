@@ -212,6 +212,7 @@ defmodule ExActor.Test do
 
   defmodule HashDictActor do
     use ExActor
+    import ExActor.Delegator
 
     delegate_to HashDict do
       init
