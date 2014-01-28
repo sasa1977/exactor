@@ -29,11 +29,11 @@ defmodule ExActor.Operations do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
       if (opts[:when]) do
         def init(unquote_splicing([opts[:arg] || quote(do: _)])) when unquote(opts[:when]) do
-          initial_state(unquote(opts[:do]))
+          unquote(opts[:do])
         end
       else
         def init(unquote_splicing([opts[:arg] || quote(do: _)])) do
-          initial_state(unquote(opts[:do]))
+          unquote(opts[:do])
         end
       end
     end

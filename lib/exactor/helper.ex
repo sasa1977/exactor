@@ -106,7 +106,7 @@ defmodule ExActor.Helper do
       :error -> nil
       {:ok, state} ->
         quote do
-          def init(_), do: initial_state(unquote(state))
+          definit do: initial_state(unquote(state))
         end
     end
   end

@@ -149,11 +149,9 @@ defmodule ExActorTest do
   defmodule InitialState2 do
     use ExActor.Tolerant
 
-    definit 1, do: :one
-    definit x, when: x < 3, do: :two
-    definit do
-      :rest
-    end
+    definit 1, do: initial_state(:one)
+    definit x, when: x < 3, do: initial_state(:two)
+    definit do: initial_state(:rest)
 
     defcall get, state: state, do: reply(state)
   end

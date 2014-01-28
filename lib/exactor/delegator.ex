@@ -51,6 +51,7 @@ defmodule ExActor.Delegator do
     quote do
       definit do
         unquote(target_module).new
+        |> initial_state
       end
     end
   end
