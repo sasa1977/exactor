@@ -96,4 +96,18 @@ defmodule ExActor.Helper do
       @exported HashSet.new
     end
   end
+
+  def def_initializer(caller) do
+    initial_state = 
+      Module.get_attribute(caller.module, :exactor_global_options)
+      |> Dict.fetch(:initial_state)
+
+    case initial_state do
+      :error -> nil
+      {:ok, state} ->
+        quote do
+          def init(_), do: initial_state(unquote(state))
+        end
+    end
+  end
 end

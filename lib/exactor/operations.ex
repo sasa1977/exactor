@@ -204,8 +204,8 @@ defmodule ExActor.Operations do
       definfo :some_message, do: ...
       definfo :another_message, state: ..., do:
   """
-  defmacro definfo(msg, opts1, opts2) do
-    impl_definfo(msg, opts1 ++ opts2)
+  defmacro definfo(msg, opts, body) do
+    impl_definfo(msg, opts ++ body)
   end
 
   defp impl_definfo(msg, options) do

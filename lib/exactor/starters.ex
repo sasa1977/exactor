@@ -1,4 +1,4 @@
-defmodule ExActor.DefaultInterface do
+defmodule ExActor.Starters do
   @moduledoc """
   A mixin that provides `start/2` and `start_link/2` interface functions that 
   can be used to start new instances of the gen_server.
@@ -22,8 +22,6 @@ defmodule ExActor.DefaultInterface do
       def start_link(args // nil, options // []) do
         :gen_server.start_link(unquote_splicing(start_args(__CALLER__)))
       end
-
-      unquote(def_initializer(__CALLER__))
     end
   end
 
@@ -42,20 +40,6 @@ defmodule ExActor.DefaultInterface do
         [quote(do: {:global, unquote(global_name)}) | defargs]
       
       _ -> defargs
-    end
-  end
-
-  defp def_initializer(caller) do
-    initial_state = 
-      Module.get_attribute(caller.module, :exactor_global_options)
-      |> Dict.fetch(:initial_state)
-
-    case initial_state do
-      :error -> nil
-      {:ok, state} ->
-        quote do
-          def init(_), do: initial_state(unquote(state))
-        end
     end
   end
 end

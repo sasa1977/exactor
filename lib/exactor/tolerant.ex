@@ -31,8 +31,9 @@ defmodule ExActor.Tolerant do
 
       import ExActor.Operations
       import ExActor.Responders
-      use ExActor.DefaultInterface
+      use ExActor.Starters
       
+      unquote(ExActor.Helper.def_initializer(__CALLER__))
       unquote(ExActor.Helper.init_exported)
     end
   end
