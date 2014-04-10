@@ -158,7 +158,7 @@ May be useful if calls/casts simply delegate to some module/functions.
 defmodule DynActor do
   use ExActor.GenServer
 
-  lc op inlist [:op1, :op2] do
+  for op <- [:op1, :op2] do
     defcall unquote(op), state: state do
       SomeModule.unquote(op)(state)
     end

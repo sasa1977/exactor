@@ -188,13 +188,13 @@ defmodule ExActorTest do
   defmodule DynActor do
     use ExActor.Tolerant
 
-    lc op inlist [:get] do
+    for op <- [:get] do
       defcall unquote(op), state: state do
         reply(state)
       end
     end
 
-    lc op inlist [:set] do
+    for op <- [:set] do
       defcast unquote(op)(arg) do
         new_state(arg)
       end
