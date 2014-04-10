@@ -16,7 +16,7 @@ defmodule Actor do
   use ExActor.GenServer
 
   definit do: initial_state(some_state)
-  
+
   defcast inc(x), state: state, do: new_state(state + x)
 
   defcall get, state: state, do: reply(state)
@@ -35,7 +35,7 @@ Actor.get(act)         # 3
 
 ## Predefines
 
-A predefine is an ExActor mixin that provides some default implementations for 
+A predefine is an ExActor mixin that provides some default implementations for
 `gen_server` callbacks. Following predefines are currently provided:
 
 * `ExActor.GenServer` - All `gen_server` callbacks are provided by GenServer.Behaviour from Elixir standard library.
@@ -79,11 +79,11 @@ defcast f, do: {:noreply, new_state}                # standard gen_server respon
 
 definfo c, do: noreply                              # doesn't change state
 definfo d, do: new_state(new_state)                 # sets new state
-definfo f, do: {:noreply, new_state}                # standard gen_server response    
+definfo f, do: {:noreply, new_state}                # standard gen_server response
 ```
-    
+
 ## Simplified starting
-    
+
 ```elixir
 Actor.start                           # same as Actor.start(nil)
 Actor.start(init_arg)
@@ -191,7 +191,7 @@ defmodule HashDictActor do
   use ExActor.GenServer
 
   definit do: HashDict.new
-  
+
   defcall get(k), state: state do
     HashDict.get(state, k)
   end

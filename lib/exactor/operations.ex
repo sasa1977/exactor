@@ -1,6 +1,6 @@
 defmodule ExActor.Operations do
   @moduledoc """
-  Macros that can be used for simpler definition of `gen_server` operations 
+  Macros that can be used for simpler definition of `gen_server` operations
   such as casts or calls.
   """
 
@@ -8,7 +8,7 @@ defmodule ExActor.Operations do
   defmacro definit(opts), do: do_definit(opts)
 
   @doc """
-  Defines the initializer callback. 
+  Defines the initializer callback.
 
   Examples:
 
@@ -44,7 +44,7 @@ defmodule ExActor.Operations do
   defmacro defcast(cast, body) do
     generate_funs(:defcast, cast, body ++ [module: __CALLER__.module])
   end
-  
+
   @doc """
   Defines the cast callback clause and a corresponding interface fun.
 
@@ -74,12 +74,12 @@ defmodule ExActor.Operations do
   defmacro defcall(call, body) do
     generate_funs(:defcall, call, body ++ [module: __CALLER__.module])
   end
-  
+
   @doc """
   Defines the call callback clause and a corresponding interface fun.
 
   Examples:
-      
+
       defcall operation, do: reply(response)
       defcall get, state: state, do: reply(state)
       defcall inc, state: state, do: set_and_reply(state + 1, response)
@@ -101,7 +101,7 @@ defmodule ExActor.Operations do
   defmacro defcall(call, options, body) do
     generate_funs(:defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
   end
-  
+
   defp generate_funs(type, name, options) do
     quote do
       unquote(transfer_options(type, name, options))
@@ -118,8 +118,8 @@ defmodule ExActor.Operations do
         name when is_atom(name) -> {name, []}
         {name, _, args} -> {name, args || []}
       end
-      
-      options = 
+
+      options =
         Module.get_attribute(__MODULE__, :exactor_global_options)
         |> Keyword.merge(unquote(Macro.escape(options, unquote: true)))
 
@@ -127,7 +127,7 @@ defmodule ExActor.Operations do
       msg = ExActor.Helper.msg_payload(name, args)
     end
   end
-  
+
 
   defp define_interface(type) do
     quote do
@@ -163,16 +163,16 @@ defmodule ExActor.Operations do
     end
   end
 
-  
+
   defp server_fun(:defcast), do: :cast
   defp server_fun(:defcall), do: :call
-  
-  
+
+
   defp define_handler(type) do
     quote bind_quoted: [type: type, wrapped_type: wrapper(type)] do
       {handler_name, handler_args, state_identifier} = ExActor.Helper.handler_sig(type, options, msg)
       guard = options[:when]
-      
+
       handler_body = ExActor.Helper.wrap_handler_body(wrapped_type, state_identifier, options[:do])
 
       if guard do
@@ -187,7 +187,7 @@ defmodule ExActor.Operations do
     end
   end
 
-  
+
   defp wrapper(:defcast), do: :handle_cast_response
   defp wrapper(:defcall), do: :handle_call_response
 
@@ -200,7 +200,7 @@ defmodule ExActor.Operations do
   Defines the info callback clause. Responses work just like with casts.
 
   Examples:
-      
+
       definfo :some_message, do: ...
       definfo :another_message, state: ..., do:
   """
@@ -210,14 +210,14 @@ defmodule ExActor.Operations do
 
   defp impl_definfo(msg, options) do
     quote bind_quoted: [
-      msg: Macro.escape(msg, unquote: true), 
+      msg: Macro.escape(msg, unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      
+
       {state_arg, state_identifier} = ExActor.Helper.get_state_identifier(
         options[:state] || quote(do: _)
       )
-      
+
       handler_body = ExActor.Helper.wrap_handler_body(:handle_cast_response, state_identifier, options[:do])
       if options[:when] do
         def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
