@@ -65,7 +65,7 @@ defmodule ExActor.Operations do
       defcast a(_), do: ...
   """
   defmacro defcast(cast, options, body) do
-    generate_funs(:defcast, cast, Keyword.from_enum(options ++ body  ++ [module: __CALLER__.module]))
+    generate_funs(:defcast, cast, options ++ body ++ [module: __CALLER__.module])
   end
 
 
@@ -99,7 +99,7 @@ defmodule ExActor.Operations do
       defcall a(_), do: ...
   """
   defmacro defcall(call, options, body) do
-    generate_funs(:defcall, call, Keyword.from_enum(options ++ body ++ [module: __CALLER__.module]))
+    generate_funs(:defcall, call, options ++ body ++ [module: __CALLER__.module])
   end
 
   defp generate_funs(type, name, options) do
