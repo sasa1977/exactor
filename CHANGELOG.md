@@ -1,8 +1,12 @@
+# v.0.3.0
+- removed implicit "smart" returns
+- removed default `use ExActor`
+
 # v0.2.1
 
 - migrated to Elixir v0.13.0
 
-# v0.2
+# v0.2.0
 
 This version introduces some significant changes. If you don't want to incorporate them, there is a tag for 0.1. Keep in mind that I won't maintain the 0.1, so your best option is to fork it and maintain it yourself.
 
