@@ -81,7 +81,6 @@ defmodule ExActor.Helper do
     quote do
       (unquote(body))
       |> ExActor.ResponseHandler.unquote(handler)(unquote(state_identifier))
-      |> ExActor.ResponseHandler.dummy_wrap
     end
   end
 
