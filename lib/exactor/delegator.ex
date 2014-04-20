@@ -23,7 +23,7 @@ defmodule ExActor.Delegator do
   This is the same as:
 
       defmodule HashDictActor do
-        use ExActor
+        use ExActor.GenServer
 
         definit do: HashDict.new
 
