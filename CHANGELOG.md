@@ -1,4 +1,4 @@
-# master
+# v0.2.1
 
 - migrated to Elixir v0.13.0
 
