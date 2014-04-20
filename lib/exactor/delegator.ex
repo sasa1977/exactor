@@ -26,7 +26,7 @@ defmodule ExActor.Delegator do
         use ExActor
 
         definit do: HashDict.new
-        
+
         defcall get(k), state: state do
           HashDict.get(state, k)
           |> reply
@@ -57,7 +57,7 @@ defmodule ExActor.Delegator do
   end
 
   defp parse_instruction(target_module, {:query, _, [{:/, _, [{fun, _, _}, arity]}]}) do
-    make_delegate(:defcall, fun, arity, 
+    make_delegate(:defcall, fun, arity,
       quote do
         unquote(forward_call(target_module, fun, arity))
         |> reply
@@ -66,7 +66,7 @@ defmodule ExActor.Delegator do
   end
 
   defp parse_instruction(target_module, {:trans, _, [{:/, _, [{fun, _, _}, arity]}]}) do
-    make_delegate(:defcast, fun, arity, 
+    make_delegate(:defcast, fun, arity,
       quote do
         unquote(forward_call(target_module, fun, arity))
         |> new_state
@@ -78,8 +78,8 @@ defmodule ExActor.Delegator do
   defp make_delegate(type, fun, arity, code) do
     quote do
       unquote(type)(
-        unquote(fun)(unquote_splicing(make_args(arity))), 
-        state: state, 
+        unquote(fun)(unquote_splicing(make_args(arity))),
+        state: state,
         do: unquote(code)
       )
     end

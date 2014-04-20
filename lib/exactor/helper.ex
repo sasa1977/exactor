@@ -1,15 +1,15 @@
 defmodule ExActor.Helper do
   @moduledoc false
-  
+
   def handler_sig(:defcall, options, msg) do
-    {state_arg, state_identifier} = 
+    {state_arg, state_identifier} =
       get_state_identifier(options[:state] || {:_, [], :quoted})
 
     {:handle_call, [msg, options[:from] || quote(do: _from), state_arg], state_identifier}
   end
 
   def handler_sig(:defcast, options, msg) do
-    {state_arg, state_identifier} = 
+    {state_arg, state_identifier} =
       get_state_identifier(options[:state] || {:_, [], :quoted})
 
     {:handle_cast, [msg, state_arg], state_identifier}
@@ -64,9 +64,9 @@ defmodule ExActor.Helper do
       local when is_atom(local) -> local
       {:local, local} -> local
       {:global, _} = global -> global
-    end 
+    end
   end
-  
+
   defp timeout_arg(options, type) do
     case {type, options[:timeout]} do
       {:defcall, timeout} when timeout != nil ->
@@ -79,7 +79,7 @@ defmodule ExActor.Helper do
 
   def wrap_handler_body(handler, state_identifier, body) do
     quote do
-      (unquote(body)) 
+      (unquote(body))
       |> ExActor.ResponseHandler.unquote(handler)(unquote(state_identifier))
       |> ExActor.ResponseHandler.dummy_wrap
     end
@@ -98,7 +98,7 @@ defmodule ExActor.Helper do
   end
 
   def def_initializer(caller) do
-    initial_state = 
+    initial_state =
       Module.get_attribute(caller.module, :exactor_global_options)
       |> Dict.fetch(:initial_state)
 
