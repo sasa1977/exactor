@@ -7,7 +7,15 @@ defmodule ExActor.Mixfile do
       version: "0.3.0",
       elixir: ">= 0.13.0",
       app: :exactor,
-      deps: deps(Mix.env)
+      deps: deps(Mix.env),
+      package: [
+        contributors: ["Saša Jurić"],
+        licenses: ["MIT"],
+        links: [{"Github", "https://github.com/sasa1977/exactor"}]
+      ],
+      description: """
+        Simplified creation of gen_server based actors in Elixir.
+      """
     ]
   end
 
