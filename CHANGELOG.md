@@ -1,3 +1,9 @@
+# v.0.3.2
+- adapted to Elixir v0.13.1 (backwards compatible with 0.13.0)
+
+# v.0.3.1
+- "dummy" empty version due to Hex limitations
+
 # v.0.3.0
 - removed implicit "smart" returns
 - removed default `use ExActor`
