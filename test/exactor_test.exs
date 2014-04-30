@@ -75,7 +75,7 @@ defmodule ExActorTest do
     assert TestActor.get(actor) == 6
 
     {line, exception} = TestActor.test_exc(actor)
-    assert (exception[:file] |> Path.basename) == 'exactor_test.exs'
+    assert (exception[:file] |> Path.basename |> to_string) == "exactor_test.exs"
     assert exception[:line] == line
 
     assert TestActor.test_from(actor) == :ok
