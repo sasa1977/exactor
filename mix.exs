@@ -4,10 +4,10 @@ defmodule ExActor.Mixfile do
   def project do
     [
       project: "ExActor",
-      version: "0.3.2",
-      elixir: ">= 0.13.0",
+      version: "0.3.3",
+      elixir: "~> 0.13.1",
       app: :exactor,
-      deps: deps(Mix.env),
+      deps: deps,
       package: [
         contributors: ["Saša Jurić"],
         licenses: ["MIT"],
@@ -19,5 +19,9 @@ defmodule ExActor.Mixfile do
 
   def application, do: []
 
-  defp deps(_), do: []
+  defp deps do
+    [
+      {:ex_doc, github: "elixir-lang/ex_doc", only: :docs}
+    ]
+  end
 end
