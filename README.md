@@ -51,8 +51,12 @@ You can also build your own predefine. Refer to the source code of the existing 
 ```elixir
 defmodule SingletonActor do
   # The actor process will be locally registered under an alias
-  # given via export option
+  # provided in export option.
   use ExActor.GenServer, export: :some_registered_name
+
+  # you can also use via, and global
+  # use ExActor.GenServer, export: {:global, :some_registered_name}
+  # use ExActor.GenServer, export: {:via, :gproc, :some_registered_name}
 
   defcall get, state: state, do: reply(state)
   defcast set(x), do: new_state(x)

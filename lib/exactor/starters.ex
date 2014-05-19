@@ -72,6 +72,9 @@ defmodule ExActor.Starters do
       {:global, global_name} ->
         [quote(do: {:global, unquote(global_name)}) | defargs]
 
+      {:{}, _, [:via, _, _]} = via ->
+        [via | defargs]
+
       _ -> defargs
     end
   end

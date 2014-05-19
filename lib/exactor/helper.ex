@@ -75,6 +75,7 @@ defmodule ExActor.Helper do
       local when is_atom(local) -> local
       {:local, local} -> local
       {:global, _} = global -> global
+      {:{}, _, [:via, _, _]} = via -> via
     end
   end
 

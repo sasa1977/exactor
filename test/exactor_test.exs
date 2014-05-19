@@ -188,6 +188,20 @@ defmodule ExActorTest do
   end
 
 
+  defmodule ViaSingletonActor do
+    use ExActor.Tolerant, export: {:via, :global, :global_singleton2}
+
+    defcall get, state: state, do: reply(state)
+    defcast set(x), do: new_state(x)
+  end
+
+  test "via singleton" do
+    {:ok, _} = ViaSingletonActor.start(0)
+    ViaSingletonActor.set(4)
+    assert ViaSingletonActor.get == 4
+  end
+
+
   defmodule InitialState1 do
     use ExActor.Tolerant, initial_state: HashDict.new
     defcall get, state: state, do: reply(state)
