@@ -36,6 +36,11 @@ defmodule ExActor.Starters do
           ExActor.Helper.start_args([unquote_splicing(start_args(__CALLER__))])
         )
       end
+
+      for fun <- [:start, :start_link], arity <- [0, 1, 2] do
+        {fun, arity}
+      end
+      |> defoverridable
     end
   end
 

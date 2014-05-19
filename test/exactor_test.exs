@@ -265,4 +265,27 @@ defmodule ExActorTest do
     assert HashDictActor.size(actor) == 1
     assert HashDictActor.normal_call(actor) == 2
   end
+
+
+  defmodule TestStartActor do
+    use ExActor.Tolerant
+
+    def start, do: 1
+    def start(x), do: x
+    def start(x, y), do: {x,y}
+
+    def start_link, do: 5
+    def start_link(x), do: x
+    def start_link(x, y), do: {x,y}
+  end
+
+  test "overridable starters" do
+    assert 1 = TestStartActor.start
+    assert 2 = TestStartActor.start(2)
+    assert {3,4} = TestStartActor.start(3,4)
+
+    assert 5 = TestStartActor.start_link
+    assert 6 = TestStartActor.start_link(6)
+    assert {7,8} = TestStartActor.start_link(7,8)
+  end
 end
