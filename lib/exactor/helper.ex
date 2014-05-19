@@ -31,6 +31,17 @@ defmodule ExActor.Helper do
   def msg_payload(function, args), do: quote(do: {unquote_splicing([function | args])})
 
 
+  def start_args([_, _, _, _] = full_args), do: full_args
+  def start_args([module, args, options]) do
+    {name, options} = Keyword.pop(options, :name)
+    if name do
+      if is_atom(name), do: name = {:local, name}
+      [name, module, args, options]
+    else
+      [module, args, options]
+    end
+  end
+
 
   def interface_args(args, options), do: {server_arg(options), stub_args(args)}
 

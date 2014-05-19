@@ -16,11 +16,17 @@ defmodule ExActor.Starters do
   defmacro __using__(_) do
     quote do
       def start(args \\ nil, options \\ []) do
-        :gen_server.start(unquote_splicing(start_args(__CALLER__)))
+        apply(
+          :gen_server, :start,
+          ExActor.Helper.start_args([unquote_splicing(start_args(__CALLER__))])
+        )
       end
 
       def start_link(args \\ nil, options \\ []) do
-        :gen_server.start_link(unquote_splicing(start_args(__CALLER__)))
+        apply(
+          :gen_server, :start_link,
+          ExActor.Helper.start_args([unquote_splicing(start_args(__CALLER__))])
+        )
       end
     end
   end

@@ -110,6 +110,38 @@ defmodule ExActorTest do
 
     {:ok, actor} = TestActor.start_link(1, [])
     assert TestActor.get(actor) == 1
+
+    {:ok, actor} = TestActor.start(1, name: :local1)
+    assert TestActor.get(:local1) == 1
+    assert actor == Process.whereis(:local1)
+
+    {:ok, actor} = TestActor.start(1, name: {:local, :local2})
+    assert TestActor.get(:local2) == 1
+    assert actor == Process.whereis(:local2)
+
+    {:ok, actor} = TestActor.start(1, name: {:global, :global1})
+    assert TestActor.get({:global, :global1}) == 1
+    assert actor == :global.whereis_name(:global1)
+
+    {:ok, actor} = TestActor.start(1, name: {:via, :global, :global2})
+    assert TestActor.get({:via, :global, :global2}) == 1
+    assert actor == :global.whereis_name(:global2)
+
+    {:ok, actor} = TestActor.start_link(1, name: :local3)
+    assert TestActor.get(:local3) == 1
+    assert actor == Process.whereis(:local3)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:local, :local4})
+    assert TestActor.get(:local4) == 1
+    assert actor == Process.whereis(:local4)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:global, :global3})
+    assert TestActor.get({:global, :global3}) == 1
+    assert actor == :global.whereis_name(:global3)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:via, :global, :global4})
+    assert TestActor.get({:via, :global, :global4}) == 1
+    assert actor == :global.whereis_name(:global4)
   end
 
 

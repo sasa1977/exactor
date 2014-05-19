@@ -94,6 +94,17 @@ Actor.start_link(init_arg)
 Actor.start_link(init_arg, options)
 ```
 
+## Dynamic registration
+
+```elixir
+Actor.start(init_arg, name: :some_registered_name, ...)                   # registers locally
+Actor.start(init_arg, name: {:local, :some_registered_name}, ...)         # registers locally
+Actor.start(init_arg, name: {:global, :some_registered_name}, ...)        # registers globally
+Actor.start(init_arg, name: {:via, :gproc, :some_registered_name}, ...)   # registers via external module
+
+# same for start_link
+```
+
 ## Simplified initialization
 
 ```elixir
