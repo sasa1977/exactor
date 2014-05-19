@@ -145,6 +145,21 @@ defmodule ExActorTest do
   end
 
 
+  defmodule ExcludeStartersActor do
+    use ExActor.Tolerant, starters: false
+  end
+
+  test "exclude starters" do
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1) end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1,2) end)
+
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1) end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1, 2) end)
+  end
+
+
   defmodule SingletonActor do
     use ExActor.Tolerant, export: :singleton
 

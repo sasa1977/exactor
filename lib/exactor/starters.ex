@@ -20,20 +20,34 @@ defmodule ExActor.Starters do
     - `{:local, :some_alias}` - same as above
     - `{:global, :some_alias}` - registers globally
     - `{:via, Module, :alias}` - uses Module for registration
+
+  All starter functions are overridable, and you can redefine them in your module.
+  If you don't want these functions, you can exclude them, by providing
+  `starters: false` option. For example:
+
+      use ExActor.GenServer, starters: false
   """
   defmacro __using__(_) do
+    case Module.get_attribute(__CALLER__.module, :exactor_global_options)[:starters] do
+      nil -> generate_starters(__CALLER__)
+      true -> generate_starters(__CALLER__)
+      false -> nil
+    end
+  end
+
+  defp generate_starters(caller) do
     quote do
       def start(args \\ nil, options \\ []) do
         apply(
           :gen_server, :start,
-          ExActor.Helper.start_args([unquote_splicing(start_args(__CALLER__))])
+          ExActor.Helper.start_args([unquote_splicing(start_args(caller))])
         )
       end
 
       def start_link(args \\ nil, options \\ []) do
         apply(
           :gen_server, :start_link,
-          ExActor.Helper.start_args([unquote_splicing(start_args(__CALLER__))])
+          ExActor.Helper.start_args([unquote_splicing(start_args(caller))])
         )
       end
 

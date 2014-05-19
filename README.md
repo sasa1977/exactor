@@ -94,7 +94,7 @@ Actor.start_link(init_arg)
 Actor.start_link(init_arg, options)
 ```
 
-## Dynamic registration
+### Dynamic registration
 
 ```elixir
 Actor.start(init_arg, name: :some_registered_name, ...)                   # registers locally
@@ -103,6 +103,12 @@ Actor.start(init_arg, name: {:global, :some_registered_name}, ...)        # regi
 Actor.start(init_arg, name: {:via, :gproc, :some_registered_name}, ...)   # registers via external module
 
 # same for start_link
+```
+
+Starter functions are overridable. You can optionally specify that you don't want them:
+
+```elixir
+  use ExActor.GenServer, starters: false
 ```
 
 ## Simplified initialization
