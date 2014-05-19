@@ -12,6 +12,14 @@ defmodule ExActor.Starters do
       Actor.start_link  # same as Actor.start_link(nil)
       Actor.start_link(init_arg)
       Actor.start_link(init_arg, gen_server_options)
+
+  In `gen_server_options`, you can include `name: registered_name` to set the
+  registered name of the server in runtime. Following patterns are allowed:
+
+    - `:some_alias` - registers locally
+    - `{:local, :some_alias}` - same as above
+    - `{:global, :some_alias}` - registers globally
+    - `{:via, Module, :alias}` - uses Module for registration
   """
   defmacro __using__(_) do
     quote do
