@@ -1,6 +1,6 @@
 defmodule ExActor.GenServer do
   @moduledoc """
-  Predefine that relies on `GenServer.Behaviour` provided by Elixir standard 
+  Predefine that relies on `GenServer` provided by Elixir standard
   lib. All ExActor macros are imported.
 
   Example:
@@ -23,7 +23,7 @@ defmodule ExActor.GenServer do
     ExActor.Helper.init_global_options(__CALLER__, opts)
 
     quote do
-      use GenServer.Behaviour
+      use GenServer
 
       import ExActor.Operations
       import ExActor.Responders

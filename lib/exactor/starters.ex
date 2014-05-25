@@ -38,17 +38,11 @@ defmodule ExActor.Starters do
   defp generate_starters(caller) do
     quote do
       def start(args \\ nil, options \\ []) do
-        apply(
-          :gen_server, :start,
-          ExActor.Helper.start_args([unquote_splicing(start_args(caller))])
-        )
+        GenServer.start(unquote_splicing(start_args(caller)))
       end
 
       def start_link(args \\ nil, options \\ []) do
-        apply(
-          :gen_server, :start_link,
-          ExActor.Helper.start_args([unquote_splicing(start_args(caller))])
-        )
+        GenServer.start_link(unquote_splicing(start_args(caller)))
       end
 
       for fun <- [:start, :start_link], arity <- [0, 1, 2] do
@@ -59,23 +53,11 @@ defmodule ExActor.Starters do
   end
 
   defp start_args(caller) do
-    defargs = [quote(do: __MODULE__), quote(do: args), quote(do: options)]
-    case Module.get_attribute(caller.module, :exactor_global_options)[:export] do
-      default when default in [nil, false, true] -> defargs
-
-      local_name when is_atom(local_name) ->
-        [quote(do: {:local, unquote(local_name)}) | defargs]
-
-      {:local, local_name} ->
-        [quote(do: {:local, unquote(local_name)}) | defargs]
-
-      {:global, global_name} ->
-        [quote(do: {:global, unquote(global_name)}) | defargs]
-
-      {:{}, _, [:via, _, _]} = via ->
-        [via | defargs]
-
-      _ -> defargs
+    options = case Module.get_attribute(caller.module, :exactor_global_options)[:export] do
+      default when default in [nil, false, true] -> quote(do: options)
+      name -> quote(do: [{:name, unquote(name)} | options])
     end
+
+    [quote(do: __MODULE__), quote(do: args), options]
   end
 end

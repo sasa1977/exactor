@@ -13,7 +13,7 @@ defmodule ExActorTest do
     defcall timeout, timeout: 10, do: (:timer.sleep(100); noreply)
 
     defcall unexported, export: false, do: reply(:unexported)
-    def my_unexported(server), do: :gen_server.call(server, :unexported)
+    def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
     defcast leave_state, do: (4; noreply)
