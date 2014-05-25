@@ -3,7 +3,7 @@
 Simplified implementation and usage of `gen_server` based actors in Elixir.
 This library is inspired by (though not depending on) [GenX](https://github.com/yrashk/genx), but in addition, removes some more boilerplate, and changes some semantics of the handle_call/cast responses.
 
-If you're new to Erlang, and are not familiar on how gen_server works, I strongly suggest you learn about it first. It's really not that hard, and you can use [Elixir docs](http://elixir-lang.org/docs/stable/GenServer.Behaviour.html) as the starting point. Once you're familiar with gen_server, you can use ExActor to make your actors (gen_servers) more compact.
+If you're new to Erlang, and are not familiar on how gen_server works, I strongly suggest you learn about it first. It's really not that hard, and you can use [Elixir docs](http://elixir-lang.org/docs/stable/elixir/GenServer.html) as the starting point. Once you're familiar with gen_server, you can use ExActor to make your actors (gen_servers) more compact.
 
 Status: I use it in production.
 
@@ -38,7 +38,7 @@ Actor.get(act)         # 3
 A predefine is an ExActor mixin that provides some default implementations for
 `gen_server` callbacks. Following predefines are currently provided:
 
-* `ExActor.GenServer` - All `gen_server` callbacks are provided by GenServer.Behaviour from Elixir standard library.
+* `ExActor.GenServer` - All `gen_server` callbacks are provided by GenServer from Elixir standard library.
 * `ExActor.Strict` - All `gen_server` callbacks are provided. The default implementations for all except `code_change` and `terminate` will cause the server to be stopped.
 * `ExActor.Tolerant` - All `gen_server` callbacks are provided. The default implementations ignore all messages without stopping the server.
 * `ExActor.Empty` - No default implementation for `gen_server` callbacks are provided.
@@ -51,8 +51,12 @@ You can also build your own predefine. Refer to the source code of the existing 
 ```elixir
 defmodule SingletonActor do
   # The actor process will be locally registered under an alias
-  # given via export option
+  # provided in export option.
   use ExActor.GenServer, export: :some_registered_name
+
+  # you can also use via, and global
+  # use ExActor.GenServer, export: {:global, :some_registered_name}
+  # use ExActor.GenServer, export: {:via, :gproc, :some_registered_name}
 
   defcall get, state: state, do: reply(state)
   defcast set(x), do: new_state(x)
@@ -92,6 +96,23 @@ Actor.start(init_arg, options)
 Actor.start_link                      # same as Actor.start_link(nil)
 Actor.start_link(init_arg)
 Actor.start_link(init_arg, options)
+```
+
+### Dynamic registration
+
+```elixir
+Actor.start(init_arg, name: :some_registered_name, ...)                   # registers locally
+Actor.start(init_arg, name: {:local, :some_registered_name}, ...)         # registers locally
+Actor.start(init_arg, name: {:global, :some_registered_name}, ...)        # registers globally
+Actor.start(init_arg, name: {:via, :gproc, :some_registered_name}, ...)   # registers via external module
+
+# same for start_link
+```
+
+Starter functions are overridable. You can optionally specify that you don't want them:
+
+```elixir
+  use ExActor.GenServer, starters: false
 ```
 
 ## Simplified initialization

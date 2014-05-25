@@ -31,7 +31,6 @@ defmodule ExActor.Helper do
   def msg_payload(function, args), do: quote(do: {unquote_splicing([function | args])})
 
 
-
   def interface_args(args, options), do: {server_arg(options), stub_args(args)}
 
   defp server_arg(options) do
@@ -64,6 +63,7 @@ defmodule ExActor.Helper do
       local when is_atom(local) -> local
       {:local, local} -> local
       {:global, _} = global -> global
+      {:{}, _, [:via, _, _]} = via -> via
     end
   end
 

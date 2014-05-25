@@ -13,7 +13,7 @@ defmodule ExActorTest do
     defcall timeout, timeout: 10, do: (:timer.sleep(100); noreply)
 
     defcall unexported, export: false, do: reply(:unexported)
-    def my_unexported(server), do: :gen_server.call(server, :unexported)
+    def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
     defcast leave_state, do: (4; noreply)
@@ -110,6 +110,53 @@ defmodule ExActorTest do
 
     {:ok, actor} = TestActor.start_link(1, [])
     assert TestActor.get(actor) == 1
+
+    {:ok, actor} = TestActor.start(1, name: :local1)
+    assert TestActor.get(:local1) == 1
+    assert actor == Process.whereis(:local1)
+
+    {:ok, actor} = TestActor.start(1, name: {:local, :local2})
+    assert TestActor.get(:local2) == 1
+    assert actor == Process.whereis(:local2)
+
+    {:ok, actor} = TestActor.start(1, name: {:global, :global1})
+    assert TestActor.get({:global, :global1}) == 1
+    assert actor == :global.whereis_name(:global1)
+
+    {:ok, actor} = TestActor.start(1, name: {:via, :global, :global2})
+    assert TestActor.get({:via, :global, :global2}) == 1
+    assert actor == :global.whereis_name(:global2)
+
+    {:ok, actor} = TestActor.start_link(1, name: :local3)
+    assert TestActor.get(:local3) == 1
+    assert actor == Process.whereis(:local3)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:local, :local4})
+    assert TestActor.get(:local4) == 1
+    assert actor == Process.whereis(:local4)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:global, :global3})
+    assert TestActor.get({:global, :global3}) == 1
+    assert actor == :global.whereis_name(:global3)
+
+    {:ok, actor} = TestActor.start_link(1, name: {:via, :global, :global4})
+    assert TestActor.get({:via, :global, :global4}) == 1
+    assert actor == :global.whereis_name(:global4)
+  end
+
+
+  defmodule ExcludeStartersActor do
+    use ExActor.Tolerant, starters: false
+  end
+
+  test "exclude starters" do
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1) end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1,2) end)
+
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1) end)
+    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1, 2) end)
   end
 
 
@@ -138,6 +185,20 @@ defmodule ExActorTest do
     {:ok, _} = GlobalSingletonActor.start(0)
     GlobalSingletonActor.set(3)
     assert GlobalSingletonActor.get == 3
+  end
+
+
+  defmodule ViaSingletonActor do
+    use ExActor.Tolerant, export: {:via, :global, :global_singleton2}
+
+    defcall get, state: state, do: reply(state)
+    defcast set(x), do: new_state(x)
+  end
+
+  test "via singleton" do
+    {:ok, _} = ViaSingletonActor.start(0)
+    ViaSingletonActor.set(4)
+    assert ViaSingletonActor.get == 4
   end
 
 
@@ -232,5 +293,28 @@ defmodule ExActorTest do
     assert HashDictActor.get(actor, :a) == 1
     assert HashDictActor.size(actor) == 1
     assert HashDictActor.normal_call(actor) == 2
+  end
+
+
+  defmodule TestStartActor do
+    use ExActor.Tolerant
+
+    def start, do: 1
+    def start(x), do: x
+    def start(x, y), do: {x,y}
+
+    def start_link, do: 5
+    def start_link(x), do: x
+    def start_link(x, y), do: {x,y}
+  end
+
+  test "overridable starters" do
+    assert 1 = TestStartActor.start
+    assert 2 = TestStartActor.start(2)
+    assert {3,4} = TestStartActor.start(3,4)
+
+    assert 5 = TestStartActor.start_link
+    assert 6 = TestStartActor.start_link(6)
+    assert {7,8} = TestStartActor.start_link(7,8)
   end
 end

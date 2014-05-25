@@ -7,11 +7,11 @@ defmodule PredefinesTest do
 
   test "tolerant" do
     {:ok, pid} = TolerantActor.start
-    :gen_server.cast(pid, :undefined_message)
+    GenServer.cast(pid, :undefined_message)
     send(pid, :undefined_message)
     assert match?(
-      {:timeout, _}, 
-      catch_exit(:gen_server.call(pid, :undefined_message, 10))
+      {:timeout, _},
+      catch_exit(GenServer.call(pid, :undefined_message, 10))
     )
   end
 
@@ -30,13 +30,13 @@ defmodule PredefinesTest do
 
     assert match?({:error, :badinit}, NonStartableStrictActor.start)
 
-    assert_invalid(StrictActor, &:gen_server.cast(&1, :undefined_message))
+    assert_invalid(StrictActor, &GenServer.cast(&1, :undefined_message))
     assert_invalid(StrictActor, &send(&1, :undefined_message))
-    assert_invalid(StrictActor, 
+    assert_invalid(StrictActor,
       fn(pid) ->
         assert match?(
-          {{:bad_call, :undefined_message}, _}, 
-          catch_exit(:gen_server.call(pid, :undefined_message, 10))
+          {{:bad_call, :undefined_message}, _},
+          catch_exit(GenServer.call(pid, :undefined_message, 10))
         )
       end
     )
@@ -44,7 +44,7 @@ defmodule PredefinesTest do
 
   defp assert_invalid(module, fun) do
     {:ok, pid} = module.start
-    
+
     fun.(pid)
 
     :timer.sleep(20)
@@ -60,15 +60,15 @@ defmodule PredefinesTest do
   test "gen_server" do
     :error_logger.tty(false)
 
-    assert_invalid(GenServerActor, &:gen_server.cast(&1, :undefined_message))
-    
+    assert_invalid(GenServerActor, &GenServer.cast(&1, :undefined_message))
+
     assert_invalid(GenServerActor,
       fn(pid) ->
         send(pid, :undefined_message)
 
         assert match?(
-          {{:bad_call, :undefined_message}, _}, 
-          catch_exit(:gen_server.call(pid, :undefined_message, 10))
+          {{:bad_call, :undefined_message}, _},
+          catch_exit(GenServer.call(pid, :undefined_message, 10))
         )
       end
     )
@@ -89,8 +89,8 @@ defmodule PredefinesTest do
 
   test "empty" do
     {:ok, pid} = EmptyActor.start
-    :gen_server.cast(pid, :undefined_message)
+    GenServer.cast(pid, :undefined_message)
     send(pid, :undefined_message)
-    assert :gen_server.call(pid, :undefined_message) == 1
+    assert GenServer.call(pid, :undefined_message) == 1
   end
 end

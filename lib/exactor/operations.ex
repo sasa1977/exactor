@@ -156,7 +156,7 @@ defmodule ExActor.Operations do
       end
 
       def unquote(name)(unquote_splicing(interface_args)) do
-        :gen_server.unquote(server_fun)(
+        GenServer.unquote(server_fun)(
           unquote_splicing(ExActor.Helper.server_args(options, type, send_msg))
         )
       end
