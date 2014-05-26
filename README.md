@@ -7,9 +7,18 @@ If you're new to Erlang, and are not familiar on how gen_server works, I strongl
 
 Status: I use it in production.
 
-Online documentation is available [here](http://sasa1977.github.io/exactor/)
+Online documentation is available [here](http://sasa1977.github.io/exactor/).
+
+The stable package is also available on [hex](https://hex.pm/packages/exactor).
 
 ## Basic usage
+
+Be sure to include a dependency in your `mix.exs`:
+
+```elixir
+deps: [{:exactor, "~> 0.4.0"}, ...]
+```
+
 
 ```elixir
 defmodule Actor do
