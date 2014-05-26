@@ -13,7 +13,13 @@ defmodule ExActor.Mixfile do
         licenses: ["MIT"],
         links: [{"Github", "https://github.com/sasa1977/exactor"}]
       ],
-      description: "Simplified creation of gen_server based actors in Elixir."
+      description: "Simplified creation of gen_server based actors in Elixir.",
+      docs: [
+        readme: true,
+        main: "README",
+        source_url: "https://github.com/sasa1977/exactor/",
+        source_ref: "0.4.0"
+      ]
     ]
   end
 
