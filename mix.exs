@@ -1,10 +1,12 @@
 defmodule ExActor.Mixfile do
   use Mix.Project
 
+  @version "0.4.0"
+
   def project do
     [
       project: "ExActor",
-      version: "0.4.0",
+      version: @version,
       elixir: "~> 0.13.3",
       app: :exactor,
       deps: deps,
@@ -18,7 +20,7 @@ defmodule ExActor.Mixfile do
         readme: true,
         main: "README",
         source_url: "https://github.com/sasa1977/exactor/",
-        source_ref: "0.4.0"
+        source_ref: @version
       ]
     ]
   end
