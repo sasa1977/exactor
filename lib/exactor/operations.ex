@@ -4,9 +4,6 @@ defmodule ExActor.Operations do
   such as casts or calls.
   """
 
-  @doc false
-  defmacro definit(opts), do: do_definit(opts)
-
   @doc """
   Defines the initializer callback.
 
@@ -23,27 +20,21 @@ defmodule ExActor.Operations do
       # pattern matching
       definit x, when: ..., do: ...
   """
-  defmacro definit(arg, opts), do: do_definit([{:arg, arg} | opts])
+  defmacro definit(arg \\ quote(do: _), opts), do: do_definit([{:arg, arg} | opts])
 
   defp do_definit(opts) do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
       if (opts[:when]) do
-        def init(unquote_splicing([opts[:arg] || quote(do: _)])) when unquote(opts[:when]) do
-          unquote(opts[:do])
-        end
+        def init(unquote_splicing([opts[:arg]]))
+          when unquote(opts[:when]),
+          do: unquote(opts[:do])
       else
-        def init(unquote_splicing([opts[:arg] || quote(do: _)])) do
-          unquote(opts[:do])
-        end
+        def init(unquote_splicing([opts[:arg]])),
+          do: unquote(opts[:do])
       end
     end
   end
 
-
-  @doc false
-  defmacro defcast(cast, body) do
-    generate_funs(:defcast, cast, body ++ [module: __CALLER__.module])
-  end
 
   @doc """
   Defines the cast callback clause and a corresponding interface fun.
@@ -64,16 +55,10 @@ defmodule ExActor.Operations do
       defcast a(x), state: state, when: state > 1, do: ...
       defcast a(_), do: ...
   """
-  defmacro defcast(cast, options, body) do
+  defmacro defcast(cast, options \\ [], body) do
     generate_funs(:defcast, cast, options ++ body ++ [module: __CALLER__.module])
   end
 
-
-
-  @doc false
-  defmacro defcall(call, body) do
-    generate_funs(:defcall, call, body ++ [module: __CALLER__.module])
-  end
 
   @doc """
   Defines the call callback clause and a corresponding interface fun.
@@ -98,7 +83,7 @@ defmodule ExActor.Operations do
       defcall a(x), state: state, when: state > 1, do: ...
       defcall a(_), do: ...
   """
-  defmacro defcall(call, options, body) do
+  defmacro defcall(call, options \\ [], body) do
     generate_funs(:defcall, call, options ++ body ++ [module: __CALLER__.module])
   end
 
@@ -181,9 +166,6 @@ defmodule ExActor.Operations do
   end
 
 
-  @doc false
-  defmacro definfo(msg, options), do: impl_definfo(msg, options)
-
   @doc """
   Defines the info callback clause. Responses work just like with casts.
 
@@ -192,7 +174,7 @@ defmodule ExActor.Operations do
       definfo :some_message, do: ...
       definfo :another_message, state: ..., do:
   """
-  defmacro definfo(msg, opts, body) do
+  defmacro definfo(msg, opts \\ [], body) do
     impl_definfo(msg, opts ++ body)
   end
 
