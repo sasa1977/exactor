@@ -110,8 +110,6 @@ defmodule ExActor.Operations do
     end
   end
 
-
-
   defp transfer_options(type, name, options) do
     quote do
       {name, args} = case unquote(Macro.escape(name, unquote: true)) do
@@ -127,7 +125,6 @@ defmodule ExActor.Operations do
       msg = ExActor.Helper.msg_payload(name, args)
     end
   end
-
 
   defp define_interface(type) do
     quote do
@@ -163,10 +160,8 @@ defmodule ExActor.Operations do
     end
   end
 
-
   defp server_fun(:defcast), do: :cast
   defp server_fun(:defcall), do: :call
-
 
   defp define_handler(type) do
     quote bind_quoted: [type: type] do
@@ -175,13 +170,12 @@ defmodule ExActor.Operations do
       guard = options[:when]
 
       if guard do
-        def unquote(handler_name)(
-          unquote_splicing(handler_args)
-        ) when unquote(guard), do: unquote(options[:do])
+        def unquote(handler_name)(unquote_splicing(handler_args))
+          when unquote(guard),
+          do: unquote(options[:do])
       else
-        def unquote(handler_name)(
-          unquote_splicing(handler_args)
-        ), do: unquote(options[:do])
+        def unquote(handler_name)(unquote_splicing(handler_args)),
+          do: unquote(options[:do])
       end
     end
   end
@@ -203,22 +197,10 @@ defmodule ExActor.Operations do
   end
 
   defp impl_definfo(msg, options) do
-    quote bind_quoted: [
-      msg: Macro.escape(msg, unquote: true),
-      options: Macro.escape(options, unquote: true)
-    ] do
-
-      state_arg = ExActor.Helper.get_state_identifier(options[:state])
-
-      if options[:when] do
-        def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
-          unquote(options[:do])
-        end
-      else
-        def handle_info(unquote(msg), unquote(state_arg)) do
-          unquote(options[:do])
-        end
-      end
+    quote do
+      msg = unquote(Macro.escape(msg, unquote: true))
+      options = unquote(Macro.escape(options, unquote: true))
+      unquote(define_handler(:definfo))
     end
   end
 end

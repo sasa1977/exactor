@@ -9,6 +9,10 @@ defmodule ExActor.Helper do
     {:handle_cast, [msg, state_arg]}
   end
 
+  def handler_sig(:definfo, _, msg, state_arg) do
+    {:handle_info, [msg, state_arg]}
+  end
+
 
   def get_state_identifier(nil), do: get_state_identifier(quote(do: _))
   def get_state_identifier(any) do
