@@ -55,8 +55,8 @@ defmodule ExActor.Operations do
       defcast a(x), state: state, when: state > 1, do: ...
       defcast a(_), do: ...
   """
-  defmacro defcast(cast, options \\ [], body) do
-    generate_funs(:defcast, cast, options ++ body ++ [module: __CALLER__.module])
+  defmacro defcast(req_def, options \\ [], body) do
+    generate_funs(:defcast, req_def, options ++ body)
   end
 
 
@@ -83,88 +83,9 @@ defmodule ExActor.Operations do
       defcall a(x), state: state, when: state > 1, do: ...
       defcall a(_), do: ...
   """
-  defmacro defcall(call, options \\ [], body) do
-    generate_funs(:defcall, call, options ++ body ++ [module: __CALLER__.module])
+  defmacro defcall(req_def, options \\ [], body) do
+    generate_funs(:defcall, req_def, options ++ body)
   end
-
-  defp generate_funs(type, name, options) do
-    quote do
-      unquote(transfer_options(type, name, options))
-      unquote(define_interface(type))
-      unquote(define_handler(type))
-    end
-  end
-
-  defp transfer_options(type, name, options) do
-    quote do
-      {name, args} = case unquote(Macro.escape(name, unquote: true)) do
-        name when is_atom(name) -> {name, []}
-        {name, _, args} -> {name, args || []}
-      end
-
-      options =
-        Module.get_attribute(__MODULE__, :exactor_global_options)
-        |> Keyword.merge(unquote(Macro.escape(options, unquote: true)))
-
-      type = unquote(Macro.escape(type, unquote: true))
-      msg = ExActor.Helper.msg_payload(name, args)
-    end
-  end
-
-  defp define_interface(type) do
-    quote do
-      arity = length(args) + case options[:export] do
-        nil -> 1
-        true -> 1
-        _ -> 0
-      end
-
-      unless options[:export] == false or HashSet.member?(@exported, {name, arity}) do
-        server_fun = unquote(server_fun(type))
-        unquote(quoted_interface)
-
-        @exported HashSet.put(@exported, {name, arity})
-      end
-    end
-  end
-
-  defp quoted_interface do
-    quote bind_quoted: [] do
-      {server_arg, interface_args} = ExActor.Helper.interface_args(args, options)
-      send_msg = ExActor.Helper.msg_payload(name, interface_args)
-      interface_args = case server_arg do
-        nil -> interface_args
-        _ -> [server_arg | interface_args]
-      end
-
-      def unquote(name)(unquote_splicing(interface_args)) do
-        GenServer.unquote(server_fun)(
-          unquote_splicing(ExActor.Helper.server_args(options, type, send_msg))
-        )
-      end
-    end
-  end
-
-  defp server_fun(:defcast), do: :cast
-  defp server_fun(:defcall), do: :call
-
-  defp define_handler(type) do
-    quote bind_quoted: [type: type] do
-      state_arg = ExActor.Helper.get_state_identifier(options[:state])
-      {handler_name, handler_args} = ExActor.Helper.handler_sig(type, options, msg, state_arg)
-      guard = options[:when]
-
-      if guard do
-        def unquote(handler_name)(unquote_splicing(handler_args))
-          when unquote(guard),
-          do: unquote(options[:do])
-      else
-        def unquote(handler_name)(unquote_splicing(handler_args)),
-          do: unquote(options[:do])
-      end
-    end
-  end
-
 
   @doc """
   Defines the info callback clause. Responses work just like with casts.
@@ -178,11 +99,160 @@ defmodule ExActor.Operations do
     impl_definfo(msg, opts ++ body)
   end
 
-  defp impl_definfo(msg, options) do
+
+  # Generation of call/cast functions. Essentially, this is just
+  # deferred to be evaluated in the module context.
+  defp generate_funs(type, req_def, options) do
+    quote bind_quoted: [
+      type: type,
+      req_def: Macro.escape(req_def, unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      options = Keyword.merge(
+        options,
+        Module.get_attribute(__MODULE__, :exactor_global_options)
+      )
+
+      ExActor.Operations.def_request(type, req_def, options)
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+    end
+  end
+
+  @doc false
+  def def_request(type, req_def, options) do
+    {req_name, args} = parse_req_def(req_def)
     quote do
-      msg = unquote(Macro.escape(msg, unquote: true))
-      options = unquote(Macro.escape(options, unquote: true))
-      unquote(define_handler(:definfo))
+      unquote(define_interface(type, req_name, args, options))
+      unquote(implement_handler(type, options, msg_payload(req_name, args)))
+    end
+  end
+
+  defp parse_req_def(req_name) when is_atom(req_name), do: {req_name, []}
+  defp parse_req_def({req_name, _, args}), do: {req_name, args || []}
+
+  defp msg_payload(req_name, nil), do: req_name
+  defp msg_payload(req_name, []), do: req_name
+  defp msg_payload(req_name, args), do: quote(do: {unquote_splicing([req_name | args])})
+
+
+  # Defines the interface function to call/cast
+  defp define_interface(type, req_name, args, options) do
+    passthrough_args = stub_args(args)
+
+    unless options[:export] == false do
+      quote bind_quoted: [
+        type: type,
+        req_name: req_name,
+        server_fun: server_fun(type),
+        arity: interface_arity(length(args), options[:export]),
+        interface_args: Macro.escape(interface_args(passthrough_args, options), unquote: true),
+        gen_server_args: Macro.escape(gen_server_args(options, type, msg_payload(req_name, passthrough_args)), unquote: true)
+      ] do
+        unless HashSet.member?(@exported, {req_name, arity}) do
+          def unquote(req_name)(unquote_splicing(interface_args)) do
+            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          end
+
+          @exported HashSet.put(@exported, {req_name, arity})
+        end
+      end
+    end
+  end
+
+  defp server_fun(:defcast), do: :cast
+  defp server_fun(:defcall), do: :call
+
+  defp interface_arity(args_num, nil), do: args_num + 1
+  defp interface_arity(args_num, true), do: args_num + 1
+  defp interface_arity(args_num, _), do: args_num
+
+  defp interface_args(passthrough_args, options) do
+    case options[:export] do
+      nil -> [quote(do: server) | passthrough_args]
+      true -> [quote(do: server) | passthrough_args]
+      _registered -> passthrough_args
+    end
+  end
+
+  defp stub_args([]), do: []
+  defp stub_args(args) do
+    for index <- 1..length(args) do
+      {:"arg#{index}", [], __MODULE__}
+    end
+  end
+
+  defp gen_server_args(options, type, msg) do
+    [server_ref(options), msg] ++ timeout_arg(options, type)
+  end
+
+  defp server_ref(options) do
+    case options[:export] do
+      default when default in [nil, false, true] -> quote(do: server)
+      local when is_atom(local) -> local
+      {:local, local} -> local
+      {:global, _} = global -> global
+      {:{}, _, [:via, _, _]} = via -> via
+    end
+  end
+
+  defp timeout_arg(options, type) do
+    case {type, options[:timeout]} do
+      {:defcall, timeout} when timeout != nil ->
+        [timeout]
+      _ -> []
+    end
+  end
+
+
+  @doc false
+  # Implements the handler function (handle_call, handle_cast, handle_timeout)
+  def implement_handler(type, options, msg) do
+    state_arg = get_state_identifier(options[:state])
+    {handler_name, handler_args} = handler_sig(type, options, msg, state_arg)
+
+    quote bind_quoted: [
+      type: type,
+      handler_name: handler_name,
+      handler_args: Macro.escape(handler_args, unquote: true),
+      guard: Macro.escape(options[:when], unquote: true),
+      body: Macro.escape(options[:do], unquote: true)
+    ] do
+      if guard do
+        def unquote(handler_name)(unquote_splicing(handler_args))
+          when unquote(guard),
+          do: unquote(body)
+      else
+        def unquote(handler_name)(unquote_splicing(handler_args)),
+          do: unquote(body)
+      end
+    end
+  end
+
+  defp get_state_identifier(nil), do: get_state_identifier(quote(do: _))
+  defp get_state_identifier(any),
+    do: quote(do: unquote(any) = var!(___generated_state))
+
+  defp handler_sig(:defcall, options, msg, state_arg),
+    do: {:handle_call, [msg, options[:from] || quote(do: _from), state_arg]}
+  defp handler_sig(:defcast, _, msg, state_arg),
+    do: {:handle_cast, [msg, state_arg]}
+  defp handler_sig(:definfo, _, msg, state_arg),
+    do: {:handle_info, [msg, state_arg]}
+
+
+  # Implements handle_info
+  defp impl_definfo(msg, options) do
+    quote bind_quoted: [
+      msg: Macro.escape(msg, unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      options = Keyword.merge(
+        options,
+        Module.get_attribute(__MODULE__, :exactor_global_options)
+      )
+
+      ExActor.Operations.implement_handler(:definfo, options, msg)
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
     end
   end
 end
