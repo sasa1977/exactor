@@ -1,3 +1,7 @@
+# v0.5.0
+- migrated to Elixir v0.14.0
+- various internal refactorings (API and behavior remain unchanged)
+
 # v0.4.0
 - migrated to Elixir v0.13.3 (backwards incompatible with earlier versions)
 - add `name` option to allow dynamic specification of registered alias while starting
