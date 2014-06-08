@@ -7,7 +7,7 @@ defmodule ExActor.Responders do
   @doc """
   Can be used from `init` or `definit` to return the initial state.
   """
-  defmacro initial_state(state) do 
+  defmacro initial_state(state) do
     quote do
       {:ok, unquote(state)}
     end
@@ -19,7 +19,7 @@ defmodule ExActor.Responders do
   """
   defmacro reply(response) do
     quote do
-      {ExActor, :reply, unquote(response)}
+      {:reply, unquote(response), var!(___generated_state)}
     end
   end
 
@@ -48,7 +48,7 @@ defmodule ExActor.Responders do
   """
   defmacro noreply do
     quote do
-      {ExActor, :noreply}
+      {:noreply, var!(___generated_state)}
     end
   end
 end

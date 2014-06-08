@@ -1,27 +1,20 @@
 defmodule ExActor.Helper do
   @moduledoc false
 
-  def handler_sig(:defcall, options, msg) do
-    {state_arg, state_identifier} =
-      get_state_identifier(options[:state] || {:_, [], :quoted})
-
-    {:handle_call, [msg, options[:from] || quote(do: _from), state_arg], state_identifier}
+  def handler_sig(:defcall, options, msg, state_arg) do
+    {:handle_call, [msg, options[:from] || quote(do: _from), state_arg]}
   end
 
-  def handler_sig(:defcast, options, msg) do
-    {state_arg, state_identifier} =
-      get_state_identifier(options[:state] || {:_, [], :quoted})
-
-    {:handle_cast, [msg, state_arg], state_identifier}
+  def handler_sig(:defcast, _, msg, state_arg) do
+    {:handle_cast, [msg, state_arg]}
   end
 
 
-  def get_state_identifier({:=, _, [_, state_identifier]} = state_arg) do
-    {state_arg, state_identifier}
-  end
-
+  def get_state_identifier(nil), do: get_state_identifier(quote(do: _))
   def get_state_identifier(any) do
-    get_state_identifier({:=, [], [any, {:___generated_state, [], nil}]})
+    quote do
+      unquote(any) = var!(___generated_state)
+    end
   end
 
 
@@ -74,16 +67,6 @@ defmodule ExActor.Helper do
       _ -> []
     end
   end
-
-
-
-  def wrap_handler_body(handler, state_identifier, body) do
-    quote do
-      (unquote(body))
-      |> ExActor.ResponseHandler.unquote(handler)(unquote(state_identifier))
-    end
-  end
-
 
 
   def init_global_options(caller, opts) do

@@ -169,28 +169,22 @@ defmodule ExActor.Operations do
 
 
   defp define_handler(type) do
-    quote bind_quoted: [type: type, wrapped_type: wrapper(type)] do
-      {handler_name, handler_args, state_identifier} = ExActor.Helper.handler_sig(type, options, msg)
+    quote bind_quoted: [type: type] do
+      state_arg = ExActor.Helper.get_state_identifier(options[:state])
+      {handler_name, handler_args} = ExActor.Helper.handler_sig(type, options, msg, state_arg)
       guard = options[:when]
-
-      handler_body = ExActor.Helper.wrap_handler_body(wrapped_type, state_identifier, options[:do])
 
       if guard do
         def unquote(handler_name)(
           unquote_splicing(handler_args)
-        ) when unquote(guard), do: unquote(handler_body)
+        ) when unquote(guard), do: unquote(options[:do])
       else
         def unquote(handler_name)(
           unquote_splicing(handler_args)
-        ), do: unquote(handler_body)
+        ), do: unquote(options[:do])
       end
     end
   end
-
-
-  defp wrapper(:defcast), do: :handle_cast_response
-  defp wrapper(:defcall), do: :handle_call_response
-
 
 
   @doc false
@@ -214,18 +208,15 @@ defmodule ExActor.Operations do
       options: Macro.escape(options, unquote: true)
     ] do
 
-      {state_arg, state_identifier} = ExActor.Helper.get_state_identifier(
-        options[:state] || quote(do: _)
-      )
+      state_arg = ExActor.Helper.get_state_identifier(options[:state])
 
-      handler_body = ExActor.Helper.wrap_handler_body(:handle_cast_response, state_identifier, options[:do])
       if options[:when] do
         def handle_info(unquote(msg), unquote(state_arg)) when unquote(options[:when]) do
-          unquote(handler_body)
+          unquote(options[:do])
         end
       else
         def handle_info(unquote(msg), unquote(state_arg)) do
-          unquote(handler_body)
+          unquote(options[:do])
         end
       end
     end
