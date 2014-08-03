@@ -25,9 +25,14 @@ defmodule PredefinesTest do
     use ExActor.Strict, initial_state: nil
   end
 
-  test "strict" do
-    :error_logger.tty(false)
+  setup do
+    Logger.remove_backend(:console)
+    on_exit fn ->
+      Logger.add_backend(:console)
+    end
+  end
 
+  test "strict" do
     assert match?({:error, :badinit}, NonStartableStrictActor.start)
 
     assert_invalid(StrictActor, &GenServer.cast(&1, :undefined_message))
@@ -58,8 +63,6 @@ defmodule PredefinesTest do
   end
 
   test "gen_server" do
-    :error_logger.tty(false)
-
     assert_invalid(GenServerActor, &GenServer.cast(&1, :undefined_message))
 
     assert_invalid(GenServerActor,

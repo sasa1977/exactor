@@ -1,3 +1,6 @@
+# v0.6.0
+- migrated to Elixir v0.15.0
+
 # v0.5.0
 - migrated to Elixir v0.14.0
 - various internal refactorings (API and behavior remain unchanged)
