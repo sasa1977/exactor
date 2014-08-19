@@ -31,6 +31,13 @@ defmodule Actor do
   defcall get, state: state, do: reply(state)
   defcall long_call, state: state, timeout: :timer.seconds(10), do: heavy_transformation(state)
 
+  # Interface functions foo and bar are private to this module. This is useful when
+  # you need to do pre/post processing in the client process. You can simply create a plain
+  # exported interface function, and then call these private functions to issue request to
+  # the server process.
+  defcastp foo, ...
+  defcallp bar, ...
+
   definfo :some_message, do: ...
 end
 

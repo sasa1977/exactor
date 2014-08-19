@@ -59,6 +59,25 @@ defmodule ExActor.Operations do
     generate_funs(:defcast, req_def, options ++ body)
   end
 
+  @doc """
+  Same as `defcast/3` but the interface function is private. Can be useful when
+  you need to do pre/post processing in the caller process.
+
+  Examples:
+
+      def exported_interface(...) do
+        # do some client side preprocessing here
+        my_request(...)
+        # do some client side post processing here
+      end
+
+      # Not available outside of this module
+      defcastp my_request(...), do: ...
+  """
+  defmacro defcastp(req_def, options \\ [], body) do
+    generate_funs(:defcast, req_def, [{:private, true} | options] ++ body)
+  end
+
 
   @doc """
   Defines the call callback clause and a corresponding interface fun.
@@ -85,6 +104,25 @@ defmodule ExActor.Operations do
   """
   defmacro defcall(req_def, options \\ [], body) do
     generate_funs(:defcall, req_def, options ++ body)
+  end
+
+  @doc """
+  Same as `defcall/3` but the interface function is private. Can be useful when
+  you need to do pre/post processing in the caller process.
+
+  Examples:
+
+      def exported_interface(...) do
+        # do some client side preprocessing here
+        my_request(...)
+        # do some client side post processing here
+      end
+
+      # Not available outside of this module
+      defcallp my_request(...), do: ...
+  """
+  defmacro defcallp(req_def, options \\ [], body) do
+    generate_funs(:defcall, req_def, [{:private, true} | options] ++ body)
   end
 
   @doc """
@@ -141,6 +179,7 @@ defmodule ExActor.Operations do
 
     unless options[:export] == false do
       quote bind_quoted: [
+        private: options[:private],
         type: type,
         req_name: req_name,
         server_fun: server_fun(type),
@@ -149,8 +188,14 @@ defmodule ExActor.Operations do
         gen_server_args: Macro.escape(gen_server_args(options, type, msg_payload(req_name, passthrough_args)), unquote: true)
       ] do
         unless HashSet.member?(@exported, {req_name, arity}) do
-          def unquote(req_name)(unquote_splicing(interface_args)) do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          unless private do
+            def unquote(req_name)(unquote_splicing(interface_args)) do
+              GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+            end
+          else
+            defp unquote(req_name)(unquote_splicing(interface_args)) do
+              GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+            end
           end
 
           @exported HashSet.put(@exported, {req_name, arity})

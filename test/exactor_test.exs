@@ -19,6 +19,12 @@ defmodule ExActorTest do
     defcast leave_state, do: (4; noreply)
     defcall full_reply, do: set_and_reply(6, 5)
 
+    def callp_interface(server), do: private_call(server)
+    defcallp private_call, do: reply(:private_call)
+
+    def castp_interface(server), do: private_cast(server)
+    defcastp private_cast, do: new_state(:private)
+
     defcall test_exc do
       try do
         throw(__ENV__.line)
@@ -58,6 +64,13 @@ defmodule ExActorTest do
 
     TestActor.pm_set(actor)
     assert TestActor.get(actor) == :two
+
+    assert TestActor.callp_interface(actor) == :private_call
+    assert catch_error(TestActor.private_call(actor)) == :undef
+
+    TestActor.castp_interface(actor)
+    assert TestActor.get(actor) == :private
+    assert catch_error(TestActor.private_cast(actor)) == :undef
 
     {:timeout, _} =  catch_exit(TestActor.timeout(actor))
 
