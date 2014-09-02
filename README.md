@@ -16,7 +16,7 @@ The stable package is also available on [hex](https://hex.pm/packages/exactor).
 Be sure to include a dependency in your `mix.exs`:
 
 ```elixir
-deps: [{:exactor, "~> 0.6.0"}, ...]
+deps: [{:exactor, "~> 0.7.0"}, ...]
 ```
 
 
