@@ -13,7 +13,10 @@ defmodule ExActor.Mixfile do
       package: [
         contributors: ["Saša Jurić"],
         licenses: ["MIT"],
-        links: [{"Github", "https://github.com/sasa1977/exactor"}]
+        links: %{
+          "Github" => "https://github.com/sasa1977/exactor",
+          "Docs" => "http://sasa1977.github.io/exactor/"
+        }
       ],
       description: "Simplified creation of gen_server based actors in Elixir.",
       docs: [
