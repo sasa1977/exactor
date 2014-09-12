@@ -1,3 +1,6 @@
+# v1.0.0
+- migrated to Elixir 1.0.0
+
 # v0.7.0
 - migrated to Elixir 1.0.0-rc1
 - introduced `defcastp` and `defcallp` (see [docs](http://sasa1977.github.io/exactor/ExActor.Operations.html) for more details)

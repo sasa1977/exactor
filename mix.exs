@@ -1,13 +1,13 @@
 defmodule ExActor.Mixfile do
   use Mix.Project
 
-  @version "0.7.0"
+  @version "1.0.0"
 
   def project do
     [
       project: "ExActor",
       version: @version,
-      elixir: "~> 1.0.0-rc1",
+      elixir: "~> 1.0.0",
       app: :exactor,
       deps: deps,
       package: [
@@ -32,7 +32,7 @@ defmodule ExActor.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, github: "elixir-lang/ex_doc", only: :docs}
+      {:ex_doc, "~> 0.6.0", only: :docs}
     ]
   end
 end
