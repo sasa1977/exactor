@@ -7,7 +7,7 @@ If you're new to Erlang, and are not familiar on how gen_server works, I strongl
 
 Status: I use it in production.
 
-Online documentation is available [here](http://sasa1977.github.io/exactor/).
+Online documentation is available [here](http://hexdocs.pm/exactor).
 
 The stable package is also available on [hex](https://hex.pm/packages/exactor).
 
