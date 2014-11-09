@@ -1,6 +1,6 @@
 defmodule ExActor.Tolerant do
   @moduledoc """
-  Predefine that provides tolerant default implementation for `gen_server` 
+  Predefine that provides tolerant default implementation for `gen_server`
   required functions. Default implementation will cause the `gen_server` to
   ignore messages (e.g. calls/casts).
 
@@ -12,9 +12,6 @@ defmodule ExActor.Tolerant do
         use ExActor.Tolerant
         ...
       end
-
-      # Setting the initial state:
-      use ExActor.Tolerant, initial_state: HashDict.new
 
       # Locally registered name:
       use ExActor.Tolerant, export: :some_registered_name
@@ -31,8 +28,7 @@ defmodule ExActor.Tolerant do
 
       import ExActor.Operations
       import ExActor.Responders
-      use ExActor.Starters
-      
+
       unquote(ExActor.Helper.def_initializer(__CALLER__))
       unquote(ExActor.Helper.init_exported)
     end

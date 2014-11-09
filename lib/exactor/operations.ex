@@ -5,6 +5,124 @@ defmodule ExActor.Operations do
   """
 
   @doc """
+  Defines the starter function and initializer body.
+
+  Examples:
+
+      # defines and export start/2
+      defstart start(x, y) do
+        # runs in init/1 callback
+        initial_state(x + y)
+      end
+
+      # defines and export start_link/2
+      defstart start_link(x, y) do
+        # runs in init/1 callback
+        initial_state(x + y)
+      end
+
+  Notes:
+
+  - If the `export` option is set while using `ExActor`, it will be honored in starters.
+  - You can use patterns in arguments. Pattern matching is done on `init/1`.
+    There will be just one `start` or `start_link` function for the given arity.
+  - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
+  - You can also provide additional `GenServer` options via `:gen_server_opts` option.
+  - If you need to  set `GenServer` options at runtime, use `gen_server_opts: :runtime` and
+    then the starter function will receive one more argument where you can pass options, such as
+    `name: :foo` and other options that are passed to `GenServer.start` (or `start_link`).
+  - Body can be omitted. In this case, just the interface function is generated, and you
+    need to implement `init/1` yourself (or use `definit/2`). The initializer function
+    will receive arguments in form of `{arg1, arg2, ...}` function.
+  """
+  defmacro defstart({fun, _, args}, opts \\ []) when fun in [:start, :start_link] do
+    define_starter(false, fun, args, opts)
+  end
+
+  @doc """
+  Same as `defstart/2` but generates a private starter function. This can be useful if you
+  need to do some of your own pre- or post- processing:
+
+      defmodule MyActor do
+        # start is not exported
+        defstartp start(x, y) do
+          ...
+        end
+
+        def my_start do
+          ...
+
+          start(x, y)
+
+          ...
+        end
+      end
+  """
+  defmacro defstartp({fun, _, args}, options \\ []) when fun in [:start, :start_link] do
+    define_starter(true, fun, args, options)
+  end
+
+  defp define_starter(private, fun, args, options) do
+    quote bind_quoted: [
+      private: private,
+      fun: Macro.escape(fun, unquote: true),
+      args: Macro.escape(args || [], unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      {named_args, decorated_args} =
+        for {arg, index} <- Enum.with_index(args) do
+          named_arg = Macro.var(:"arg#{index}", __MODULE__)
+          {named_arg, quote(do: unquote(arg) = unquote(named_arg))}
+        end
+        |> :lists.unzip
+
+      unless options[:export] == false do
+        interface_args =
+          unless options[:gen_server_opts] == :runtime do
+            named_args
+          else
+            named_args ++ [Macro.var(:gen_server_opts, __MODULE__)]
+          end
+
+        arity = length(interface_args)
+
+        unless HashSet.member?(@exported, {fun, arity}) do
+          gen_server_opts =
+            unless options[:gen_server_opts] == :runtime do
+              case Module.get_attribute(__MODULE__, :exactor_global_options)[:export] do
+                default when default in [nil, false] -> []
+                name -> [name: name]
+              end ++ (options[:gen_server_opts] || [])
+            else
+              Macro.var(:gen_server_opts, __MODULE__)
+            end
+
+          unless private do
+            def unquote(fun)(unquote_splicing(interface_args)) do
+              GenServer.unquote(fun)(__MODULE__, {unquote_splicing(named_args)}, unquote(gen_server_opts))
+            end
+          else
+            defp unquote(fun)(unquote_splicing(named_args)) do
+              GenServer.unquote(fun)(__MODULE__, {unquote_splicing(named_args)}, unquote(gen_server_opts))
+            end
+          end
+
+          @exported HashSet.put(@exported, {fun, arity})
+        end
+      end
+
+      if options[:do] do
+        definit(
+          {unquote_splicing(args)},
+          unquote(Keyword.take(options, [:when]) ++ [do: options[:do]])
+        )
+      end
+    end
+  end
+
+
+
+  @doc """
   Defines the initializer callback.
 
   Examples:

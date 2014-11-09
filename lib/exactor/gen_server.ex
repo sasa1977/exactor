@@ -10,9 +10,6 @@ defmodule ExActor.GenServer do
         ...
       end
 
-      # Setting the initial state:
-      use ExActor.GenServer, initial_state: HashDict.new
-
       # Locally registered name:
       use ExActor.GenServer, export: :some_registered_name
 
@@ -27,7 +24,6 @@ defmodule ExActor.GenServer do
 
       import ExActor.Operations
       import ExActor.Responders
-      use ExActor.Starters
 
       unquote(ExActor.Helper.def_initializer(__CALLER__))
       unquote(ExActor.Helper.init_exported)

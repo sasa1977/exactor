@@ -16,7 +16,7 @@ The stable package is also available on [hex](https://hex.pm/packages/exactor).
 Be sure to include a dependency in your `mix.exs`:
 
 ```elixir
-deps: [{:exactor, "~> 1.0.0"}, ...]
+deps: [{:exactor, "~> 2.0.0"}, ...]
 ```
 
 
@@ -24,7 +24,9 @@ deps: [{:exactor, "~> 1.0.0"}, ...]
 defmodule Actor do
   use ExActor.GenServer
 
-  definit do: initial_state(some_state)
+  defstart start_link do
+    initial_state(0)
+  end
 
   defcast inc(x), state: state, do: new_state(state + x)
 
@@ -41,12 +43,11 @@ defmodule Actor do
   definfo :some_message, do: ...
 end
 
-# initial state is set to start argument
-{:ok, act} = Actor.start(1)
-Actor.get(act)         # 1
+{:ok, act} = Actor.start_link
+Actor.get(act)         # 0
 
 Actor.inc(act, 2)
-Actor.get(act)         # 3
+Actor.get(act)         # 2
 ```
 
 ## Predefines
@@ -69,6 +70,8 @@ defmodule SingletonActor do
   # The actor process will be locally registered under an alias
   # provided in export option.
   use ExActor.GenServer, export: :some_registered_name
+
+  defstart start, do: initial_state(nil)
 
   # you can also use via, and global
   # use ExActor.GenServer, export: {:global, :some_registered_name}
@@ -102,42 +105,33 @@ definfo d, do: new_state(new_state)                 # sets new state
 definfo f, do: {:noreply, new_state}                # standard gen_server response
 ```
 
-## Simplified starting
-
-```elixir
-Actor.start                           # same as Actor.start(nil)
-Actor.start(init_arg)
-Actor.start(init_arg, options)
-
-Actor.start_link                      # same as Actor.start_link(nil)
-Actor.start_link(init_arg)
-Actor.start_link(init_arg, options)
-```
-
-### Dynamic registration
-
-```elixir
-Actor.start(init_arg, name: :some_registered_name, ...)                   # registers locally
-Actor.start(init_arg, name: {:local, :some_registered_name}, ...)         # registers locally
-Actor.start(init_arg, name: {:global, :some_registered_name}, ...)        # registers globally
-Actor.start(init_arg, name: {:via, :gproc, :some_registered_name}, ...)   # registers via external module
-
-# same for start_link
-```
-
-Starter functions are overridable. You can optionally specify that you don't want them:
-
-```elixir
-  use ExActor.GenServer, starters: false
-```
-
 ## Simplified initialization
 
 ```elixir
-# define initial state
-use ExActor.GenServer, initial_state: HashDict.new
+defstart start(x, y, z) do
+  # init/1 is automatically generated and arguments are propagated
+  initial_state(x + y + z)
+end
+```
 
-# alternatively as the function
+You can select between `defstart start(...)` or `defstart start_link(...)`. You can also generate private starter functions using `defstartp`.
+
+### Dynamic start parameters
+
+```elixir
+defmodule Actor do
+  use ExActor.GenServer
+
+  defstart start(x), gen_server_opts: :runtime, do: ...
+end
+
+Actor.start(x, name: :foo)
+```
+
+
+### Generating initializer
+
+```elixir
 definit do: HashSet.new
 
 # using the input argument
@@ -157,6 +151,10 @@ definfo :another_message, state: ..., do:
 ## Pattern matching
 
 ```elixir
+defstart start(1), do:
+defstart start(2), do:
+defstart start(x), when: x < 5, do:
+
 defcall a(1), do: ...
 defcall a(2), do: ...
 defcall a(x), state: 1, do: ...
@@ -170,7 +168,7 @@ definit x, when: ..., do: ...
 definfo :msg, state: {...}, when: ..., do: ...
 ```
 
-Note: all call/cast matches take place at the `handle_call` or `handle_cast` level. The interface function simply passes the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
+Note: all start/call/cast matches take place at the `handle_*` callbacks. Generated interface functions simply pass the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
 
 ## Skipping interface funs
 

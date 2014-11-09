@@ -1,6 +1,6 @@
 defmodule ExActor.Empty do
   @moduledoc """
-  Empty predefine. Imports all ExActor macros, but doesn't provide any default 
+  Empty predefine. Imports all ExActor macros, but doesn't provide any default
   implementation. The declaring module must define all required functions
   of the `gen_server` behaviour.
 
@@ -11,9 +11,6 @@ defmodule ExActor.Empty do
 
         # define all gen_server required functions
       end
-      
-      # Setting the initial state:
-      use ExActor.Empty, initial_state: HashDict.new
 
       # Locally registered name:
       use ExActor.Empty, export: :some_registered_name
@@ -29,8 +26,7 @@ defmodule ExActor.Empty do
 
       import ExActor.Operations
       import ExActor.Responders
-      use ExActor.Starters
-      
+
       unquote(ExActor.Helper.def_initializer(__CALLER__))
       unquote(ExActor.Helper.init_exported)
     end

@@ -3,6 +3,7 @@ defmodule PredefinesTest do
 
   defmodule TolerantActor do
     use ExActor.Tolerant
+    defstart start
   end
 
   test "tolerant" do
@@ -22,7 +23,8 @@ defmodule PredefinesTest do
 
 
   defmodule StrictActor do
-    use ExActor.Strict, initial_state: nil
+    use ExActor.Strict
+    defstart start, do: initial_state(nil)
   end
 
   setup do
@@ -33,7 +35,7 @@ defmodule PredefinesTest do
   end
 
   test "strict" do
-    assert match?({:error, :badinit}, NonStartableStrictActor.start)
+    assert match?({:error, :badinit}, GenServer.start(NonStartableStrictActor, nil))
 
     assert_invalid(StrictActor, &GenServer.cast(&1, :undefined_message))
     assert_invalid(StrictActor, &send(&1, :undefined_message))
@@ -60,6 +62,7 @@ defmodule PredefinesTest do
 
   defmodule GenServerActor do
     use ExActor.GenServer
+    defstart start
   end
 
   test "gen_server" do
@@ -81,6 +84,7 @@ defmodule PredefinesTest do
 
   defmodule EmptyActor do
     use ExActor.Empty
+    defstart start
 
     def init(args), do: { :ok, args }
     def handle_call(_msg, _from, state), do: {:reply, 1, state}

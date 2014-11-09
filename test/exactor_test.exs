@@ -4,6 +4,11 @@ defmodule ExActorTest do
   defmodule TestActor do
     use ExActor.Tolerant
 
+    defstart start, do: initial_state(nil)
+    defstart start(x), do: initial_state(x)
+
+    defstart start_link
+
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: reply(state)
 
@@ -105,76 +110,63 @@ defmodule ExActorTest do
     assert_receive :echo
   end
 
-  test "starting" do
+  test "start" do
     {:ok, actor} = TestActor.start
     assert TestActor.get(actor) == nil
 
     {:ok, actor} = TestActor.start(1)
     assert TestActor.get(actor) == 1
 
-    {:ok, actor} = TestActor.start(1, [])
-    assert TestActor.get(actor) == 1
+    Process.exit(actor, :kill)
+    refute_receive {:EXIT, ^actor, :killed}
+  end
 
+  test "start_link" do
     {:ok, actor} = TestActor.start_link
     assert TestActor.get(actor) == nil
 
-    {:ok, actor} = TestActor.start_link(1)
-    assert TestActor.get(actor) == 1
-
-    {:ok, actor} = TestActor.start_link(1, [])
-    assert TestActor.get(actor) == 1
-
-    {:ok, actor} = TestActor.start(1, name: :local1)
-    assert TestActor.get(:local1) == 1
-    assert actor == Process.whereis(:local1)
-
-    {:ok, actor} = TestActor.start(1, name: {:local, :local2})
-    assert TestActor.get(:local2) == 1
-    assert actor == Process.whereis(:local2)
-
-    {:ok, actor} = TestActor.start(1, name: {:global, :global1})
-    assert TestActor.get({:global, :global1}) == 1
-    assert actor == :global.whereis_name(:global1)
-
-    {:ok, actor} = TestActor.start(1, name: {:via, :global, :global2})
-    assert TestActor.get({:via, :global, :global2}) == 1
-    assert actor == :global.whereis_name(:global2)
-
-    {:ok, actor} = TestActor.start_link(1, name: :local3)
-    assert TestActor.get(:local3) == 1
-    assert actor == Process.whereis(:local3)
-
-    {:ok, actor} = TestActor.start_link(1, name: {:local, :local4})
-    assert TestActor.get(:local4) == 1
-    assert actor == Process.whereis(:local4)
-
-    {:ok, actor} = TestActor.start_link(1, name: {:global, :global3})
-    assert TestActor.get({:global, :global3}) == 1
-    assert actor == :global.whereis_name(:global3)
-
-    {:ok, actor} = TestActor.start_link(1, name: {:via, :global, :global4})
-    assert TestActor.get({:via, :global, :global4}) == 1
-    assert actor == :global.whereis_name(:global4)
+    Process.flag(:trap_exit, true)
+    Process.exit(actor, :kill)
+    assert_receive {:EXIT, ^actor, :killed}
+    Process.flag(:trap_exit, false)
   end
 
 
-  defmodule ExcludeStartersActor do
-    use ExActor.Tolerant, starters: false
+  defmodule PrivateStarterActor do
+    use ExActor.GenServer
+
+    def my_start, do: start(5)
+    defstartp start(x), do: initial_state(x)
+    defcall get, state: state, do: reply(state)
   end
 
-  test "exclude starters" do
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start end)
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1) end)
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start(1,2) end)
+  test "private starter" do
+    assert catch_error(PrivateStarterActor.start(5)) == :undef
 
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link end)
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1) end)
-    assert_raise(UndefinedFunctionError, fn -> ExcludeStartersActor.start_link(1, 2) end)
+    {:ok, actor} = PrivateStarterActor.my_start
+    assert PrivateStarterActor.get(actor) == 5
+  end
+
+
+  defmodule RuntimeGenServerOptsActor do
+    use ExActor.GenServer
+
+    defstart start(x), gen_server_opts: :runtime, do: initial_state(x)
+    defcall get, state: state, do: reply(state)
+  end
+
+  test "runtime gen_server_opts" do
+    RuntimeGenServerOptsActor.start(5, name: :foo)
+    assert RuntimeGenServerOptsActor.get(:foo) == 5
+
+    RuntimeGenServerOptsActor.start(3, name: :bar)
+    assert RuntimeGenServerOptsActor.get(:bar) == 3
   end
 
 
   defmodule SingletonActor do
     use ExActor.Tolerant, export: :singleton
+    defstart start(x), do: initial_state(x)
 
     defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
@@ -189,6 +181,7 @@ defmodule ExActorTest do
 
   defmodule GlobalSingletonActor do
     use ExActor.Tolerant, export: {:global, :global_singleton}
+    defstart start(x), do: initial_state(x)
 
     defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
@@ -204,6 +197,8 @@ defmodule ExActorTest do
   defmodule ViaSingletonActor do
     use ExActor.Tolerant, export: {:via, :global, :global_singleton2}
 
+    defstart start(x), do: initial_state(x)
+
     defcall get, state: state, do: reply(state)
     defcast set(x), do: new_state(x)
   end
@@ -215,23 +210,17 @@ defmodule ExActorTest do
   end
 
 
-  defmodule InitialState1 do
-    use ExActor.Tolerant, initial_state: HashDict.new
-    defcall get, state: state, do: reply(state)
-  end
-
   defmodule InitialState2 do
     use ExActor.Tolerant
 
-    definit 1, do: initial_state(:one)
-    definit x, when: x < 3, do: initial_state(:two)
-    definit do: initial_state(:rest)
+    defstart start(1), do: initial_state(:one)
+    defstart start(x), when: x < 3, do: initial_state(:two)
+    defstart start(_), do: initial_state(:rest)
 
     defcall get, state: state, do: reply(state)
   end
 
   test "initial state" do
-    assert (InitialState1.start |> elem(1) |> InitialState1.get) == HashDict.new
     assert (InitialState2.start(1) |> elem(1) |> InitialState2.get) == :one
     assert (InitialState2.start(2) |> elem(1) |> InitialState2.get) == :two
     assert (InitialState2.start(3) |> elem(1) |> InitialState2.get) == :rest
@@ -240,6 +229,9 @@ defmodule ExActorTest do
 
   defmodule PatternMatch do
     use ExActor.Tolerant
+
+    defstart start, do: initial_state(nil)
+    defstart start(state), do: initial_state(state)
 
     defcall test(1), do: reply(:one)
     defcall test(2), do: reply(:two)
@@ -261,6 +253,8 @@ defmodule ExActorTest do
 
   defmodule DynActor do
     use ExActor.Tolerant
+
+    defstart start
 
     for op <- [:get] do
       defcall unquote(op), state: state do
@@ -286,6 +280,8 @@ defmodule ExActorTest do
     use ExActor.Tolerant
     import ExActor.Delegator
 
+    defstart start, do: initial_state(HashDict.new)
+
     delegate_to HashDict do
       init
       query get/2
@@ -306,28 +302,5 @@ defmodule ExActorTest do
     assert HashDictActor.get(actor, :a) == 1
     assert HashDictActor.size(actor) == 1
     assert HashDictActor.normal_call(actor) == 2
-  end
-
-
-  defmodule TestStartActor do
-    use ExActor.Tolerant
-
-    def start, do: 1
-    def start(x), do: x
-    def start(x, y), do: {x,y}
-
-    def start_link, do: 5
-    def start_link(x), do: x
-    def start_link(x, y), do: {x,y}
-  end
-
-  test "overridable starters" do
-    assert 1 = TestStartActor.start
-    assert 2 = TestStartActor.start(2)
-    assert {3,4} = TestStartActor.start(3,4)
-
-    assert 5 = TestStartActor.start_link
-    assert 6 = TestStartActor.start_link(6)
-    assert {7,8} = TestStartActor.start_link(7,8)
   end
 end
