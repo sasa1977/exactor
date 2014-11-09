@@ -1,3 +1,8 @@
+# v2.0.0
+- added `defstart` and `defstartp` macros to simplify definition of starters.
+- Starter functions are not automatically generated anymore. You can use `defstart` macro to create them.
+- When calling `use ExActor.*` options `initial_state`, and `starters` are not available anymore.
+
 # v1.0.0
 - migrated to Elixir 1.0.0
 
