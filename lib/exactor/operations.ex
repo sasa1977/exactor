@@ -69,12 +69,10 @@ defmodule ExActor.Operations do
       args: Macro.escape(args || [], unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      {named_args, decorated_args} =
+      named_args =
         for {arg, index} <- Enum.with_index(args) do
-          named_arg = Macro.var(:"arg#{index}", __MODULE__)
-          {named_arg, quote(do: unquote(arg) = unquote(named_arg))}
+          Macro.var(:"arg#{index}", __MODULE__)
         end
-        |> :lists.unzip
 
       unless options[:export] == false do
         interface_args =
