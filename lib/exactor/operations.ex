@@ -21,16 +21,27 @@ defmodule ExActor.Operations do
         initial_state(x + y)
       end
 
-  Notes:
+  You can also provide additional `GenServer` options via `:gen_server_opts` option.
+
+      defstart start(x, y), gen_server_opts: [min_heap_size: 10000], do: ...
+
+  If you need to  set `GenServer` options at runtime, use `gen_server_opts: :runtime` and
+  then the starter function will receive one more argument where you can pass options:
+
+      defstart start(x, y), gen_server_opts: :runtime do
+        ...
+      end
+
+      ...
+
+      MyActor.start(x, y, name: :foo, spawn_opts: [min_heap_size: 10000])
+
+  Other notes:
 
   - If the `export` option is set while using `ExActor`, it will be honored in starters.
   - You can use patterns in arguments. Pattern matching is done on `init/1`.
     There will be just one `start` or `start_link` function for the given arity.
   - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
-  - You can also provide additional `GenServer` options via `:gen_server_opts` option.
-  - If you need to  set `GenServer` options at runtime, use `gen_server_opts: :runtime` and
-    then the starter function will receive one more argument where you can pass options, such as
-    `name: :foo` and other options that are passed to `GenServer.start` (or `start_link`).
   - Body can be omitted. In this case, just the interface function is generated, and you
     need to implement `init/1` yourself (or use `definit/2`). The initializer function
     will receive arguments in form of `{arg1, arg2, ...}` function.

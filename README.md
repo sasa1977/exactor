@@ -21,7 +21,7 @@ deps: [{:exactor, "~> 2.0.0"}, ...]
 
 
 ```elixir
-defmodule Actor do
+defmodule Calculator do
   use ExActor.GenServer
 
   defstart start_link do
@@ -29,25 +29,16 @@ defmodule Actor do
   end
 
   defcast inc(x), state: state, do: new_state(state + x)
+  defcast dec(x), state: state, do: new_state(state - x)
 
   defcall get, state: state, do: reply(state)
-  defcall long_call, state: state, timeout: :timer.seconds(10), do: heavy_transformation(state)
-
-  # Interface functions foo and bar are private to this module. This is useful when
-  # you need to do pre/post processing in the client process. You can simply create a plain
-  # exported interface function, and then call these private functions to issue request to
-  # the server process.
-  defcastp foo, ...
-  defcallp bar, ...
-
-  definfo :some_message, do: ...
 end
 
-{:ok, act} = Actor.start_link
-Actor.get(act)         # 0
-
-Actor.inc(act, 2)
-Actor.get(act)         # 2
+{:ok, calculator} = Calculator.start_link
+Calculator.inc(calculator, 10)
+Calculator.dec(calculator, 3)
+Calculator.get(calculator)
+# 2
 ```
 
 ## Predefines
@@ -66,33 +57,30 @@ You can also build your own predefine. Refer to the source code of the existing 
 ## Singleton actors
 
 ```elixir
-defmodule SingletonActor do
-  # The actor process will be locally registered under an alias
-  # provided in export option.
-  use ExActor.GenServer, export: :some_registered_name
-
-  defstart start, do: initial_state(nil)
+defmodule Calculator do
+  use ExActor.GenServer, export: :calculator
 
   # you can also use via, and global
-  # use ExActor.GenServer, export: {:global, :some_registered_name}
-  # use ExActor.GenServer, export: {:via, :gproc, :some_registered_name}
+  # use ExActor.GenServer, export: {:global, :calculator}
+  # use ExActor.GenServer, export: {:via, :gproc, :calculator}
 
-  defcall get, state: state, do: reply(state)
-  defcast set(x), do: new_state(x)
+  ...
 end
 
-SingletonActor.start
-SingletonActor.set(5)
-SingletonActor.get
+# all functions defined via defcall and defcast will take
+# advantage of the export option
+Calculator.start
+Calculator.inc(5)
+Calculator.get
 ```
 
 ## Handling of return values
 
 ```elixir
-definit do: initial_state(arg)                      # sets initial state
-definit do: {:ok, arg}                              # standard gen_server response
+defstart start_link do: initial_state(arg)          # sets initial state
+defstart start_link do: {:ok, arg}                  # standard gen_server response
 
-defcall a, state: state, do: reply(response)        # responds 5 but doesn't change state
+defcall a, state: state, do: reply(response)        # responds but doesn't change state
 defcall b, do: set_and_reply(new_state, response)   # responds and changes state
 defcall c, do: {:reply, response, new_state}        # standard gen_server response
 
@@ -109,37 +97,96 @@ definfo f, do: {:noreply, new_state}                # standard gen_server respon
 
 ```elixir
 defstart start(x, y, z) do
-  # init/1 is automatically generated and arguments are propagated
+  # Generates start function and `init/1` clause.
+
+  # The code runs in init/1
   initial_state(x + y + z)
 end
 ```
 
-You can select between `defstart start(...)` or `defstart start_link(...)`. You can also generate private starter functions using `defstartp`.
+You can select between `defstart start(...)` or `defstart start_link(...)`.
 
 ### Dynamic start parameters
 
 ```elixir
-defmodule Actor do
+defmodule Calculator do
   use ExActor.GenServer
 
-  defstart start(x), gen_server_opts: :runtime, do: ...
+  defstart start_link(x), gen_server_opts: :runtime, do: ...
 end
 
-Actor.start(x, name: :foo)
+# gen_server_opts: :runtime will add additional argument to the start
+# function. This argument will be passed as options to the `GenServer` start
+# function.
+Calculator.start_link(x, name: :foo)
 ```
 
-
-### Generating initializer
+## Cluster support
 
 ```elixir
-definit do: HashSet.new
+defmodule Database do
+  use ExActor.GenServer, export: :database
 
-# using the input argument
-definit x do
-  x + 1
-  |> initial_state
+  defabcast store(key, value), do: ...
+  defmulticall get(key), do: ...
 end
+
+# called on all nodes
+Database.store(key, value)
+Database.get(key)
+
+# called on specified nodes
+Database.store(some_nodes, key, value)
+Database.get(some_nodes, key)
 ```
+
+## Private wrappers
+
+There are private versions available in form of `defstartp`, `defcallp`, `defcastp`, `defmulticallp`, and `defabcastp`. The only difference here is that interface functions are defined with `defp`. This can help you when you need to include some custom logic before or after the operation:
+
+```elixir
+defmodule Cache do
+  use ExActor.GenServer, export: :cache
+
+  defstart start_link do
+    :ets.new(:cache, [:protected, :named_table, :set])
+    initial_state(nil)
+  end
+
+  # Custom wrapper around internal `maybe_create` request.
+  def get_or_create(key, fun) do
+    case value(key) do
+      nil -> maybe_create(key, fun)
+      existing -> existing
+    end
+  end
+
+  # Private request
+  defcallp maybe_create(key, fun) do
+    case value(key) do
+      nil ->
+        value = fun.()
+        :ets.insert(:cache, {key, value})
+        value
+
+      existing -> existing
+    end
+    |> reply
+  end
+
+  defp value(key) do
+    case :ets.lookup(:cache, key) do
+      [{^key, value}] -> value
+      _ -> nil
+    end
+  end
+end
+
+Cache.start_link
+Cache.get_or_create(:foo, fn -> 1 end)  # 1
+Cache.get_or_create(:foo, fn -> 2 end)  # 1
+```
+
 
 ## Handling messages
 
@@ -162,26 +209,33 @@ defcall a(x), when: x > 1, do: ...
 defcall a(x), state: state, when: state > 1, do: ...
 defcall a(_), do: ...
 
-definit :something, do: ...
-definit x, when: ..., do: ...
-
 definfo :msg, state: {...}, when: ..., do: ...
 ```
 
 Note: all start/call/cast matches take place at the `handle_*` callbacks. Generated interface functions simply pass the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
 
-## Skipping interface funs
+If you want to match on interface functions, you could define a single private wrapper, and then plain exported functions which delegate to it:
 
 ```elixir
-# interface fun will not be generated, just handle_call clause
-defcall unexported, export: false, do: :unexported
+def my_request(...), do: do_my_request(...)
+def my_request(...), do: do_my_request(...)
+...
+
+defcallp do_my_request(...), do: ...
 ```
+
 
 ## Using from
 
 ```
-defcall a(...), from: {from_pid, ref} do
+defcall my_request(...), from: from do
   ...
+  spawn_link(fn ->
+    ...
+    GenServer.reply(from, ...)
+  end)
+
+  noreply
 end
 ```
 
@@ -211,12 +265,17 @@ defmodule HashDictActor do
   use ExActor.GenServer
   import ExActor.Delegator
 
+  defstart start_link, do: initial_state(HashDict.new)
+
   delegate_to HashDict do
-    init
     query get/2
     trans put/3
   end
 end
+
+{:ok, pid} = HashDictActor.start_link
+HashDictActor.put(pid, 1, 2)
+HashDictActor.get(pid, 1)
 ```
 
 This is equivalent of:
@@ -225,7 +284,7 @@ This is equivalent of:
 defmodule HashDictActor do
   use ExActor.GenServer
 
-  definit do: HashDict.new
+  defstart start_link, do: initial_state(HashDict.new)
 
   defcall get(k), state: state do
     HashDict.get(state, k)
