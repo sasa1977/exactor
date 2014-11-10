@@ -35,8 +35,8 @@ defmodule ExActor.Operations do
     need to implement `init/1` yourself (or use `definit/2`). The initializer function
     will receive arguments in form of `{arg1, arg2, ...}` function.
   """
-  defmacro defstart({fun, _, args}, opts \\ []) when fun in [:start, :start_link] do
-    define_starter(false, fun, args, opts)
+  defmacro defstart({fun, _, args}, opts \\ [], body \\ []) when fun in [:start, :start_link] do
+    define_starter(false, fun, args, opts ++ body)
   end
 
   @doc """
@@ -58,8 +58,8 @@ defmodule ExActor.Operations do
         end
       end
   """
-  defmacro defstartp({fun, _, args}, options \\ []) when fun in [:start, :start_link] do
-    define_starter(true, fun, args, options)
+  defmacro defstartp({fun, _, args}, options \\ [], body \\ []) when fun in [:start, :start_link] do
+    define_starter(true, fun, args, options ++ body)
   end
 
   defp define_starter(private, fun, args, options) do
@@ -171,7 +171,7 @@ defmodule ExActor.Operations do
       defcast a(x), state: state, when: state > 1, do: ...
       defcast a(_), do: ...
   """
-  defmacro defcast(req_def, options \\ [], body) do
+  defmacro defcast(req_def, options \\ [], body \\ []) do
     generate_funs(:defcast, req_def, options ++ body)
   end
 
@@ -190,7 +190,7 @@ defmodule ExActor.Operations do
       # Not available outside of this module
       defcastp my_request(...), do: ...
   """
-  defmacro defcastp(req_def, options \\ [], body) do
+  defmacro defcastp(req_def, options \\ [], body \\ []) do
     generate_funs(:defcast, req_def, [{:private, true} | options] ++ body)
   end
 
@@ -218,7 +218,7 @@ defmodule ExActor.Operations do
       defcall a(x), state: state, when: state > 1, do: ...
       defcall a(_), do: ...
   """
-  defmacro defcall(req_def, options \\ [], body) do
+  defmacro defcall(req_def, options \\ [], body \\ []) do
     generate_funs(:defcall, req_def, options ++ body)
   end
 
@@ -237,7 +237,7 @@ defmodule ExActor.Operations do
       # Not available outside of this module
       defcallp my_request(...), do: ...
   """
-  defmacro defcallp(req_def, options \\ [], body) do
+  defmacro defcallp(req_def, options \\ [], body \\ []) do
     generate_funs(:defcall, req_def, [{:private, true} | options] ++ body)
   end
 
@@ -277,7 +277,11 @@ defmodule ExActor.Operations do
     {req_name, args} = parse_req_def(req_def)
     quote do
       unquote(define_interface(type, req_name, args, options))
-      unquote(implement_handler(type, options, msg_payload(req_name, args)))
+      unquote(
+        if options[:do] do
+          implement_handler(type, options, msg_payload(req_name, args))
+        end
+      )
     end
   end
 

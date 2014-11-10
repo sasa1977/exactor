@@ -303,4 +303,38 @@ defmodule ExActorTest do
     assert HashDictActor.size(actor) == 1
     assert HashDictActor.normal_call(actor) == 2
   end
+
+
+  defmodule InterfaceReqsActor do
+    use ExActor.GenServer
+
+    defstart start_link, do: initial_state(nil)
+
+    defcall foo
+    defcast bar
+    defcall baz(x, y)
+
+    def handle_call({:baz, x, y}, _, state) do
+      {:reply, x+y, state}
+    end
+  end
+
+  test "just interfaces" do
+    Logger.remove_backend(:console)
+    Process.flag(:trap_exit, true)
+
+    {:ok, actor} = InterfaceReqsActor.start_link
+    assert InterfaceReqsActor.baz(actor, 1, 2) == 3
+
+    try do InterfaceReqsActor.foo(actor) catch _,_ -> nil end
+    assert_receive {:EXIT, ^actor, {:function_clause, _}}
+
+    {:ok, actor} = InterfaceReqsActor.start_link
+    try do InterfaceReqsActor.bar(actor) catch _,_ -> nil end
+    assert_receive {:EXIT, ^actor, {:bad_cast, :bar}}
+
+    Process.flag(:trap_exit, false)
+    :timer.sleep(100)
+    Logger.add_backend(:console)
+  end
 end
