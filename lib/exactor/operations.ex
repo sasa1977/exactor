@@ -284,18 +284,27 @@ defmodule ExActor.Operations do
 
   # Defines the interface function to call/cast
   defp define_interface(type, req_name, args, options) do
-    passthrough_args = stub_args(args)
-
     unless options[:export] == false do
+      passthrough_args = stub_args(args)
       quote bind_quoted: [
         private: options[:private],
         type: type,
         req_name: req_name,
         server_fun: server_fun(type),
-        arity: interface_arity(length(args), options[:export]),
         interface_args: Macro.escape(interface_args(passthrough_args, options), unquote: true),
         gen_server_args: Macro.escape(gen_server_args(options, type, msg_payload(req_name, passthrough_args)), unquote: true)
       ] do
+        {interface_args, gen_server_args} =
+          unless type in [:multicall, :abcast] do
+            {interface_args, gen_server_args}
+          else
+            {
+              [quote(do: nodes \\ [node() | :erlang.nodes()]) | interface_args],
+              [quote(do: nodes) | gen_server_args]
+            }
+          end
+
+        arity = length(interface_args)
         unless HashSet.member?(@exported, {req_name, arity}) do
           unless private do
             def unquote(req_name)(unquote_splicing(interface_args)) do
@@ -315,10 +324,8 @@ defmodule ExActor.Operations do
 
   defp server_fun(:defcast), do: :cast
   defp server_fun(:defcall), do: :call
-
-  defp interface_arity(args_num, nil), do: args_num + 1
-  defp interface_arity(args_num, true), do: args_num + 1
-  defp interface_arity(args_num, _), do: args_num
+  defp server_fun(:multicall), do: :multi_call
+  defp server_fun(:abcast), do: :abcast
 
   defp interface_args(passthrough_args, options) do
     case options[:export] do
@@ -336,10 +343,18 @@ defmodule ExActor.Operations do
   end
 
   defp gen_server_args(options, type, msg) do
-    [server_ref(options), msg] ++ timeout_arg(options, type)
+    [server_ref(options, type), msg] ++ timeout_arg(options, type)
   end
 
-  defp server_ref(options) do
+  defp server_ref(options, op) when op in [:multicall, :abcast] do
+    case options[:export] do
+      local when is_atom(local) and local != nil and local != false -> local
+      {:local, local} -> local
+      _ -> quote(do: server)
+    end
+  end
+
+  defp server_ref(options, _) do
     case options[:export] do
       default when default in [nil, false, true] -> quote(do: server)
       local when is_atom(local) -> local
@@ -419,6 +434,99 @@ defmodule ExActor.Operations do
       )
 
       ExActor.Operations.implement_handler(:definfo, options, msg)
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+    end
+  end
+
+  @doc """
+  Defines a multicall operation.
+
+  Examples:
+
+      defmulticall my_request(x, y), do: ...
+
+      ...
+
+      # If the actor is locally registered via `:export` option
+      MyActor.my_request(2, 3)
+      MyActor.my_request(nodes, 2, 3)
+
+      # The actor is not locally registered via `:export` option
+      MyActor.my_request(:local_alias, 2, 3)
+      MyActor.my_request(nodes, :local_alias, 2, 3)
+  """
+  defmacro defmulticall(req_def, options \\ [], body \\ []) do
+    do_defmulticall(req_def, options ++ body)
+  end
+
+  @doc """
+  Like `defmulticall/3` but the interface function is private.
+  """
+  defmacro defmulticallp(req_def, options \\ [], body \\ []) do
+    do_defmulticall(req_def, [{:private, true} | options] ++ body)
+  end
+
+  defp do_defmulticall(req_def, options) do
+    quote bind_quoted: [
+      req_def: Macro.escape(req_def, unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      options = Keyword.merge(
+        options,
+        Module.get_attribute(__MODULE__, :exactor_global_options)
+      )
+
+      ExActor.Operations.def_request(:defcall, req_def, Keyword.put(options, :export, false))
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+
+      ExActor.Operations.def_request(:multicall, req_def, Keyword.drop(options, [:do]))
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+    end
+  end
+
+
+  @doc """
+  Defines an abcast operation.
+
+  Examples:
+
+      defabcast my_request(x, y), do: ...
+
+      ...
+
+      # If the actor is locally registered via `:export` option
+      MyActor.my_request(2, 3)
+      MyActor.my_request(nodes, 2, 3)
+
+      # The actor is not locally registered via `:export` option
+      MyActor.my_request(:local_alias, 2, 3)
+      MyActor.my_request(nodes, :local_alias, 2, 3)
+  """
+  defmacro defabcast(req_def, options \\ [], body \\ []) do
+    do_defabcast(req_def, options ++ body)
+  end
+
+  @doc """
+  Like `defabcast/3` but the interface function is private.
+  """
+  defmacro defabcastp(req_def, options \\ [], body \\ []) do
+    do_defabcast(req_def, [{:private, true} | options] ++ body)
+  end
+
+  defp do_defabcast(req_def, options) do
+    quote bind_quoted: [
+      req_def: Macro.escape(req_def, unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      options = Keyword.merge(
+        options,
+        Module.get_attribute(__MODULE__, :exactor_global_options)
+      )
+
+      ExActor.Operations.def_request(:defcast, req_def, Keyword.put(options, :export, false))
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+
+      ExActor.Operations.def_request(:abcast, req_def, Keyword.drop(options, [:do]))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
     end
   end

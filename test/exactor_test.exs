@@ -337,4 +337,77 @@ defmodule ExActorTest do
     :timer.sleep(100)
     Logger.add_backend(:console)
   end
+
+
+  defmodule ClusterActor do
+    use ExActor.GenServer, export: :cluster_actor
+
+    defstart start, do: initial_state(nil)
+    defmulticall sum(x, y), do: reply(x + y)
+
+    def diff(x, y), do: do_diff(x, y)
+    defmulticallp do_diff(x, y), do: reply(x - y)
+
+    defcall get, state: state, do: reply(state)
+    defabcast set(x), do: new_state(x)
+
+    def set2(x), do: do_set2(x)
+    defabcastp do_set2(x), do: new_state(2 * x)
+  end
+
+  test "cluster actor" do
+    ClusterActor.start
+    assert ClusterActor.sum(3, 2) == {[{:"nonode@nohost", 5}], []}
+    assert ClusterActor.sum([node()], 3, 2) == {[{:"nonode@nohost", 5}], []}
+    assert ClusterActor.sum([:unknown_node], 3, 2) == {[], [:unknown_node]}
+    assert ClusterActor.sum([], 3, 2) == {[], []}
+    assert catch_error(ClusterActor.do_diff(3, 2)) == :undef
+    assert ClusterActor.diff(3, 2) == {[{:"nonode@nohost", 1}], []}
+
+    assert ClusterActor.set(4) == :abcast
+    assert ClusterActor.get == 4
+
+    assert catch_error(ClusterActor.do_set2(3)) == :undef
+    assert ClusterActor.set2(4) == :abcast
+    assert ClusterActor.get == 8
+  end
+
+
+
+  defmodule NonRegisteredClusterActor do
+    use ExActor.GenServer
+
+    defstart start do
+      Process.register(self, :nrca)
+      initial_state(nil)
+    end
+
+    defmulticall sum(x, y), do: reply(x + y)
+
+    def diff(x, y), do: do_diff(:nrca, x, y)
+    defmulticallp do_diff(x, y), do: reply(x - y)
+
+    defcall get, state: state, do: reply(state)
+    defabcast set(x), do: new_state(x)
+
+    def set2(x), do: do_set2(:nrca, x)
+    defabcastp do_set2(x), do: new_state(2 * x)
+  end
+
+  test "non registered cluster actor" do
+    NonRegisteredClusterActor.start
+    assert NonRegisteredClusterActor.sum(:nrca, 3, 2) == {[{:"nonode@nohost", 5}], []}
+    assert NonRegisteredClusterActor.sum([node()], :nrca, 3, 2) == {[{:"nonode@nohost", 5}], []}
+    assert NonRegisteredClusterActor.sum([:unknown_node], :nrca, 3, 2) == {[], [:unknown_node]}
+    assert NonRegisteredClusterActor.sum([], :nrca, 3, 2) == {[], []}
+    assert catch_error(NonRegisteredClusterActor.do_diff(:nrca, 3, 2)) == :undef
+    assert NonRegisteredClusterActor.diff(3, 2) == {[{:"nonode@nohost", 1}], []}
+
+    assert NonRegisteredClusterActor.set(:nrca, 4) == :abcast
+    assert NonRegisteredClusterActor.get(:nrca) == 4
+
+    assert catch_error(NonRegisteredClusterActor.do_set2(:nrca, 3)) == :undef
+    assert NonRegisteredClusterActor.set2(4) == :abcast
+    assert NonRegisteredClusterActor.get(:nrca) == 8
+  end
 end
