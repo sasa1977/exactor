@@ -241,17 +241,6 @@ defmodule ExActor.Operations do
     generate_funs(:defcall, req_def, [{:private, true} | options] ++ body)
   end
 
-  @doc """
-  Defines the info callback clause. Responses work just like with casts.
-
-  Examples:
-
-      definfo :some_message, do: ...
-      definfo :another_message, state: ..., do:
-  """
-  defmacro definfo(msg, opts \\ [], body) do
-    impl_definfo(msg, opts ++ body)
-  end
 
 
   # Generation of call/cast functions. Essentially, this is just
@@ -404,6 +393,19 @@ defmodule ExActor.Operations do
   defp handler_sig(:definfo, _, msg, state_arg),
     do: {:handle_info, [msg, state_arg]}
 
+
+
+  @doc """
+  Defines the info callback clause. Responses work just like with casts.
+
+  Examples:
+
+      definfo :some_message, do: ...
+      definfo :another_message, state: ..., do:
+  """
+  defmacro definfo(msg, opts \\ [], body) do
+    impl_definfo(msg, opts ++ body)
+  end
 
   # Implements handle_info
   defp impl_definfo(msg, options) do
