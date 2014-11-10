@@ -34,4 +34,8 @@ defmodule ExActor.Helper do
         end
     end
   end
+
+  def state_var do
+    Macro.var(:___state_var, ExActor)
+  end
 end

@@ -349,7 +349,7 @@ defmodule ExActor.Operations do
   defp stub_args([]), do: []
   defp stub_args(args) do
     for index <- 1..length(args) do
-      {:"arg#{index}", [], __MODULE__}
+      Macro.var(:"arg#{index}", __MODULE__)
     end
   end
 
@@ -410,7 +410,7 @@ defmodule ExActor.Operations do
 
   defp get_state_identifier(nil), do: get_state_identifier(quote(do: _))
   defp get_state_identifier(any),
-    do: quote(do: unquote(any) = var!(___generated_state))
+    do: quote(do: unquote(any) = unquote(ExActor.Helper.state_var))
 
   defp handler_sig(:defcall, options, msg, state_arg),
     do: {:handle_call, [msg, options[:from] || quote(do: _from), state_arg]}

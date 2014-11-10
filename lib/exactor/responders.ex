@@ -19,7 +19,7 @@ defmodule ExActor.Responders do
   """
   defmacro reply(response) do
     quote do
-      {:reply, unquote(response), var!(___generated_state)}
+      {:reply, unquote(response), unquote(ExActor.Helper.state_var)}
     end
   end
 
@@ -48,7 +48,7 @@ defmodule ExActor.Responders do
   """
   defmacro noreply do
     quote do
-      {:noreply, var!(___generated_state)}
+      {:noreply, unquote(ExActor.Helper.state_var)}
     end
   end
 end
