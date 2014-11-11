@@ -418,4 +418,19 @@ defmodule ExActorTest do
     assert NonRegisteredClusterActor.set2(4) == :abcast
     assert NonRegisteredClusterActor.get(:nrca) == 8
   end
+
+  defmodule TestDefaultsActor do
+    use ExActor.GenServer
+
+    defstart start(a, b \\ 0, c), do: initial_state(a + b + c)
+    defcall get, state: state, do: reply(state)
+  end
+
+  test "defaults" do
+    {:ok, actor} = TestDefaultsActor.start(1, 2, 3)
+    assert TestDefaultsActor.get(actor) == 6
+
+    {:ok, actor} = TestDefaultsActor.start(1, 2)
+    assert TestDefaultsActor.get(actor) == 3
+  end
 end

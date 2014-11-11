@@ -101,26 +101,23 @@ defmodule ExActor.Operations do
       args: Macro.escape(args || [], unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      named_args =
-        for {arg, index} <- Enum.with_index(args) do
-          Macro.var(:"arg#{index}", __MODULE__)
-        end
+      {arg_names, interface_matches, args} = ExActor.Operations.start_args(args)
 
       unless options[:export] == false do
-        interface_args =
+        interface_matches =
           unless options[:gen_server_opts] == :runtime do
-            named_args
+            interface_matches
           else
-            named_args ++ [Macro.var(:gen_server_opts, __MODULE__)]
+            interface_matches ++ [Macro.var(:gen_server_opts, __MODULE__)]
           end
 
-        arity = length(interface_args)
+        arity = length(interface_matches)
 
         {payload, match_pattern} = case args do
           [] -> {nil, nil}
           [_|_] ->
             {
-              quote(do: {unquote_splicing(named_args)}),
+              quote(do: {unquote_splicing(arg_names)}),
               quote(do: {unquote_splicing(args)})
             }
         end
@@ -148,11 +145,11 @@ defmodule ExActor.Operations do
             end
 
           unless private do
-            def unquote(fun)(unquote_splicing(interface_args)) do
+            def unquote(fun)(unquote_splicing(interface_matches)) do
               GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           else
-            defp unquote(fun)(unquote_splicing(named_args)) do
+            defp unquote(fun)(unquote_splicing(interface_matches)) do
               GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           end
@@ -168,6 +165,30 @@ defmodule ExActor.Operations do
         )
       end
     end
+  end
+
+  @doc false
+  def start_args(args) do
+    arg_names =
+      for {_, index} <- Enum.with_index(args) do
+        Macro.var(:"arg#{index}", __MODULE__)
+      end
+
+    interface_matches = for {arg, arg_name} <- Enum.zip(args, arg_names) do
+      case arg do
+        {:\\, context, [_, default]} -> {:\\, context, [arg_name, default]}
+        _ -> arg_name
+      end
+    end
+
+    args = for arg <- args do
+      case arg do
+        {:\\, _, [match, _]} -> match
+        _ -> arg
+      end
+    end
+
+    {arg_names, interface_matches, args}
   end
 
 
