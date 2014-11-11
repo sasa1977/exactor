@@ -6,6 +6,7 @@ defmodule ExActorTest do
 
     defstart start, do: initial_state(nil)
     defstart start(x), do: initial_state(x)
+    defstart start(x,y,z), do: initial_state(x+y+z)
 
     defstart start_link
 
@@ -116,6 +117,9 @@ defmodule ExActorTest do
 
     {:ok, actor} = TestActor.start(1)
     assert TestActor.get(actor) == 1
+
+    {:ok, actor} = TestActor.start(1,2,3)
+    assert TestActor.get(actor) == 6
 
     Process.exit(actor, :kill)
     refute_receive {:EXIT, ^actor, :killed}

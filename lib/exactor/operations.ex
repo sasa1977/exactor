@@ -95,6 +95,15 @@ defmodule ExActor.Operations do
 
         arity = length(interface_args)
 
+        {payload, match_pattern} = case args do
+          [] -> {nil, nil}
+          [_|_] ->
+            {
+              quote(do: {unquote_splicing(named_args)}),
+              quote(do: {unquote_splicing(args)})
+            }
+        end
+
         unless HashSet.member?(@exported, {fun, arity}) do
           gen_server_opts =
             unless options[:gen_server_opts] == :runtime do
@@ -108,11 +117,11 @@ defmodule ExActor.Operations do
 
           unless private do
             def unquote(fun)(unquote_splicing(interface_args)) do
-              GenServer.unquote(fun)(__MODULE__, {unquote_splicing(named_args)}, unquote(gen_server_opts))
+              GenServer.unquote(fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           else
             defp unquote(fun)(unquote_splicing(named_args)) do
-              GenServer.unquote(fun)(__MODULE__, {unquote_splicing(named_args)}, unquote(gen_server_opts))
+              GenServer.unquote(fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           end
 
@@ -122,7 +131,7 @@ defmodule ExActor.Operations do
 
       if options[:do] do
         definit(
-          {unquote_splicing(args)},
+          unquote(match_pattern),
           unquote(Keyword.take(options, [:when]) ++ [do: options[:do]])
         )
       end
