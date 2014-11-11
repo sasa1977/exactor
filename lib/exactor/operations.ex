@@ -23,7 +23,7 @@ defmodule ExActor.Operations do
 
   You can also provide additional `GenServer` options via `:gen_server_opts` option.
 
-      defstart start(x, y), gen_server_opts: [min_heap_size: 10000], do: ...
+      defstart start(x, y), gen_server_opts: [spawn_opts: [min_heap_size: 10000]], do: ...
 
   If you need to  set `GenServer` options at runtime, use `gen_server_opts: :runtime` and
   then the starter function will receive one more argument where you can pass options:
@@ -45,14 +45,21 @@ defmodule ExActor.Operations do
   - Body can be omitted. In this case, just the interface function is generated, and you
     need to implement `init/1` yourself (or use `definit/2`). The initializer function
     will receive arguments in form of `{arg1, arg2, ...}` function.
+
+  Payload format (args passed to `init/1`):
+
+  - no arguments -> `nil`
+  - one arguments -> `{x}`
+  - more arguments -> `{x, y, ...}`
   """
   defmacro defstart({fun, _, args}, opts \\ [], body \\ []) when fun in [:start, :start_link] do
     define_starter(false, fun, args, opts ++ body)
   end
 
   @doc """
-  Same as `defstart/2` but generates a private starter function. This can be useful if you
-  need to do some of your own pre- or post- processing:
+  Same as `defstart/2` but the interface function is private.
+
+  Can be useful when you need to do pre/post processing in the caller process.
 
       defmodule MyActor do
         # start is not exported
@@ -190,14 +197,17 @@ defmodule ExActor.Operations do
       defcast a(x), when: x > 1, do: ...
       defcast a(x), state: state, when: state > 1, do: ...
       defcast a(_), do: ...
+
+  Payload formats are the same as in `defcall/3`
   """
   defmacro defcast(req_def, options \\ [], body \\ []) do
     generate_funs(:defcast, req_def, options ++ body)
   end
 
   @doc """
-  Same as `defcast/3` but the interface function is private. Can be useful when
-  you need to do pre/post processing in the caller process.
+  Same as `defcast/3` but the interface function is private.
+
+  Can be useful when you need to do pre/post processing in the caller process.
 
   Examples:
 
@@ -237,14 +247,21 @@ defmodule ExActor.Operations do
       defcall a(x), when: x > 1, do: ...
       defcall a(x), state: state, when: state > 1, do: ...
       defcall a(_), do: ...
+
+  Payload format (args passed to `handle_call/3`):
+
+  - no arguments -> `:my_request`
+  - one arguments -> `{:my_request, x}`
+  - more arguments -> `{:my_request, x, y, ...}`
   """
   defmacro defcall(req_def, options \\ [], body \\ []) do
     generate_funs(:defcall, req_def, options ++ body)
   end
 
   @doc """
-  Same as `defcall/3` but the interface function is private. Can be useful when
-  you need to do pre/post processing in the caller process.
+  Same as `defcall/3` but the interface function is private.
+
+  Can be useful when you need to do pre/post processing in the caller process.
 
   Examples:
 
@@ -474,13 +491,15 @@ defmodule ExActor.Operations do
       # The actor is not locally registered via `:export` option
       MyActor.my_request(:local_alias, 2, 3)
       MyActor.my_request(nodes, :local_alias, 2, 3)
+
+  Payload formats are the same as in `defcall/3`
   """
   defmacro defmulticall(req_def, options \\ [], body \\ []) do
     do_defmulticall(req_def, options ++ body)
   end
 
   @doc """
-  Like `defmulticall/3` but the interface function is private.
+  Same as `defmulticall/3` but the interface function is private.
   """
   defmacro defmulticallp(req_def, options \\ [], body \\ []) do
     do_defmulticall(req_def, [{:private, true} | options] ++ body)
@@ -521,13 +540,15 @@ defmodule ExActor.Operations do
       # The actor is not locally registered via `:export` option
       MyActor.my_request(:local_alias, 2, 3)
       MyActor.my_request(nodes, :local_alias, 2, 3)
+
+  Payload formats are the same as in `defcall/3`
   """
   defmacro defabcast(req_def, options \\ [], body \\ []) do
     do_defabcast(req_def, options ++ body)
   end
 
   @doc """
-  Like `defabcast/3` but the interface function is private.
+  Same as `defabcast/3` but the interface function is private.
   """
   defmacro defabcastp(req_def, options \\ [], body \\ []) do
     do_defabcast(req_def, [{:private, true} | options] ++ body)

@@ -96,8 +96,8 @@ definfo f, do: {:noreply, new_state}                # standard gen_server respon
 ## Simplified initialization
 
 ```elixir
-defstart start(x, y, z) do
-  # Generates start function and `init/1` clause.
+defstart start_link(x, y, z) do
+  # Generates start_link function and `init/1` clause.
 
   # The code runs in init/1
   initial_state(x + y + z)
@@ -198,9 +198,9 @@ definfo :another_message, state: ..., do:
 ## Pattern matching
 
 ```elixir
-defstart start(1), do:
-defstart start(2), do:
-defstart start(x), when: x < 5, do:
+defstart start_link(1), do:
+defstart start_link(2), do:
+defstart start_link(x), when: x < 5, do:
 
 defcall a(1), do: ...
 defcall a(2), do: ...

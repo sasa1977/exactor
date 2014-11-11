@@ -5,7 +5,12 @@ defmodule ExActor.Responders do
   """
 
   @doc """
-  Can be used from `init` or `definit` to return the initial state.
+  Sets the initial state.
+
+  Applicable in:
+
+  - `ExActor.Operations.defstart/3`
+  - `ExActor.Operations.definit/2`
   """
   defmacro initial_state(state) do
     quote do
@@ -14,8 +19,11 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  Can be used from `handle_call` or `defcall` to reply without changing the
-  state
+  Replies without changing the state.
+
+  Applicable in:
+  - `ExActor.Operations.defcall/3`
+  - `ExActor.Operations.defmulticall/3`
   """
   defmacro reply(response) do
     quote do
@@ -24,7 +32,12 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  Can be used from `handle_call` or `defcall` to reply and change the state.
+  Replies and sets the new state
+
+  Applicable in:
+
+  - `ExActor.Operations.defcall/3`
+  - `ExActor.Operations.defmulticall/3`
   """
   defmacro set_and_reply(new_state, response) do
     quote do
@@ -33,8 +46,15 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  Can be used from `handle_call`, `defcall`, `handle_info`, or `definfo` to
-  set the new state.
+  Sets the new state.
+
+  Applicable in:
+
+  - `ExActor.Operations.defcall/3`
+  - `ExActor.Operations.defcast/3`
+  - `ExActor.Operations.defabcast/3`
+  - `ExActor.Operations.defmulticall/3`
+  - `ExActor.Operations.definfo/3`
   """
   defmacro new_state(state) do
     quote do
@@ -43,8 +63,15 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  Can be used from `handle_call`, `defcall`, `handle_info`, or `definfo` to
-  leave the state unchanged.
+  Leaves the state unchanged.
+
+  Applicable in:
+
+  - `ExActor.Operations.defcall/3`
+  - `ExActor.Operations.defcast/3`
+  - `ExActor.Operations.defabcast/3`
+  - `ExActor.Operations.defmulticall/3`
+  - `ExActor.Operations.definfo/3`
   """
   defmacro noreply do
     quote do
