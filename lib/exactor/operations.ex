@@ -36,15 +36,30 @@ defmodule ExActor.Operations do
 
       MyActor.start(x, y, name: :foo, spawn_opts: [min_heap_size: 10000])
 
+  Body can be omitted. In this case, just the interface function is generated.
+  This can be useful if you want to define both `start` and `start_link`:
+
+      defstart start(x, y)
+      defstart start_link(x, y) do
+        # runs for both cases
+      end
+
+  Keep in mind that generated `info/1` matches on the number of arguments, so this won't work:
+
+      defstart start_link(x)
+      defstart start_link(x, y) do
+        # doesn't handle start_link(x)
+      end
+
+  If you want to handle various versions, you can just define start heads without the body,
+  and then use `definfo/2` or just implement `handle_info/1`.
+
   Other notes:
 
   - If the `export` option is set while using `ExActor`, it will be honored in starters.
   - You can use patterns in arguments. Pattern matching is done on `init/1`.
-    There will be just one `start` or `start_link` function for the given arity.
+    There will be just one interface function for the given arity.
   - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
-  - Body can be omitted. In this case, just the interface function is generated, and you
-    need to implement `init/1` yourself (or use `definit/2`). The initializer function
-    will receive arguments in form of `{arg1, arg2, ...}` function.
 
   Payload format (args passed to `init/1`):
 
@@ -52,7 +67,7 @@ defmodule ExActor.Operations do
   - one arguments -> `{x}`
   - more arguments -> `{x, y, ...}`
   """
-  defmacro defstart({fun, _, args}, opts \\ [], body \\ []) when fun in [:start, :start_link] do
+  defmacro defstart({fun, _, args}, opts \\ [], body \\ []) do
     define_starter(false, fun, args, opts ++ body)
   end
 
@@ -62,21 +77,20 @@ defmodule ExActor.Operations do
   Can be useful when you need to do pre/post processing in the caller process.
 
       defmodule MyActor do
-        # start is not exported
-        defstartp start(x, y) do
+        def start_link(x, y) do
+          ...
+
+          do_start_link(x, y)
+
           ...
         end
 
-        def my_start do
-          ...
-
-          start(x, y)
-
+        defstartp do_start_link(x, y), link: true do
           ...
         end
       end
   """
-  defmacro defstartp({fun, _, args}, options \\ [], body \\ []) when fun in [:start, :start_link] do
+  defmacro defstartp({fun, _, args}, options \\ [], body \\ []) do
     define_starter(true, fun, args, options ++ body)
   end
 
@@ -111,6 +125,17 @@ defmodule ExActor.Operations do
             }
         end
 
+        gen_server_fun = case (options[:link]) do
+          true -> :start_link
+          false -> :start
+          nil ->
+            if fun in [:start, :start_link] do
+              fun
+            else
+              raise "Function name must be either start or start_link. If you need another name, provide explicit :link option."
+            end
+        end
+
         unless HashSet.member?(@exported, {fun, arity}) do
           gen_server_opts =
             unless options[:gen_server_opts] == :runtime do
@@ -124,11 +149,11 @@ defmodule ExActor.Operations do
 
           unless private do
             def unquote(fun)(unquote_splicing(interface_args)) do
-              GenServer.unquote(fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           else
             defp unquote(fun)(unquote_splicing(named_args)) do
-              GenServer.unquote(fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
             end
           end
 

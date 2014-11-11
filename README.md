@@ -104,7 +104,13 @@ defstart start_link(x, y, z) do
 end
 ```
 
-You can select between `defstart start(...)` or `defstart start_link(...)`.
+By default, corresponding `GenServer` function is mapped from the function name, so you can use either `start_link` or `start`. If you want a custom function name, you need to provide explicit `:link` option:
+
+```elixir
+defstart my_start(...), link: true, do
+  ...
+end
+```
 
 ### Dynamic start parameters
 
