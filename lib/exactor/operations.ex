@@ -101,49 +101,13 @@ defmodule ExActor.Operations do
       args: Macro.escape(args || [], unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      {arg_names, interface_matches, args} = ExActor.Operations.start_args(args)
+      {interface_matches, payload, match_pattern} = ExActor.Operations.start_args(args)
 
       unless options[:export] == false do
-        interface_matches =
-          unless options[:gen_server_opts] == :runtime do
-            interface_matches
-          else
-            interface_matches ++ [Macro.var(:gen_server_opts, __MODULE__)]
-          end
-
-        arity = length(interface_matches)
-
-        {payload, match_pattern} = case args do
-          [] -> {nil, nil}
-          [_|_] ->
-            {
-              quote(do: {unquote_splicing(arg_names)}),
-              quote(do: {unquote_splicing(args)})
-            }
-        end
-
-        gen_server_fun = case (options[:link]) do
-          true -> :start_link
-          false -> :start
-          nil ->
-            if fun in [:start, :start_link] do
-              fun
-            else
-              raise "Function name must be either start or start_link. If you need another name, provide explicit :link option."
-            end
-        end
+        {arity, interface_matches, gen_server_fun, gen_server_opts} =
+          ExActor.Operations.prepare_start_interface(fun, interface_matches, options, @exactor_global_options)
 
         unless HashSet.member?(@exported, {fun, arity}) do
-          gen_server_opts =
-            unless options[:gen_server_opts] == :runtime do
-              case Module.get_attribute(__MODULE__, :exactor_global_options)[:export] do
-                default when default in [nil, false] -> []
-                name -> [name: name]
-              end ++ (options[:gen_server_opts] || [])
-            else
-              Macro.var(:gen_server_opts, __MODULE__)
-            end
-
           unless private do
             def unquote(fun)(unquote_splicing(interface_matches)) do
               GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
@@ -188,7 +152,52 @@ defmodule ExActor.Operations do
       end
     end
 
-    {arg_names, interface_matches, args}
+    {payload, match_pattern} =
+      case args do
+        [] -> {nil, nil}
+        [_|_] ->
+          {
+            quote(do: {unquote_splicing(arg_names)}),
+            quote(do: {unquote_splicing(args)})
+          }
+      end
+
+    {interface_matches, payload, match_pattern}
+  end
+
+  @doc false
+  def prepare_start_interface(fun, interface_matches, options, global_options) do
+    interface_matches =
+      unless options[:gen_server_opts] == :runtime do
+        interface_matches
+      else
+        interface_matches ++ [Macro.var(:gen_server_opts, __MODULE__)]
+      end
+
+    arity = length(interface_matches)
+
+    gen_server_fun = case (options[:link]) do
+      true -> :start_link
+      false -> :start
+      nil ->
+        if fun in [:start, :start_link] do
+          fun
+        else
+          raise "Function name must be either start or start_link. If you need another name, provide explicit :link option."
+        end
+    end
+
+    gen_server_opts =
+      unless options[:gen_server_opts] == :runtime do
+        case global_options[:export] do
+          default when default in [nil, false] -> []
+          name -> [name: name]
+        end ++ (options[:gen_server_opts] || [])
+      else
+        Macro.var(:gen_server_opts, __MODULE__)
+      end
+
+    {arity, interface_matches, gen_server_fun, gen_server_opts}
   end
 
 
@@ -334,12 +343,7 @@ defmodule ExActor.Operations do
       req_def: Macro.escape(req_def, unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      options = Keyword.merge(
-        options,
-        Module.get_attribute(__MODULE__, :exactor_global_options)
-      )
-
-      ExActor.Operations.def_request(type, req_def, options)
+      ExActor.Operations.def_request(type, req_def, Keyword.merge(options, @exactor_global_options))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
     end
   end
@@ -511,10 +515,7 @@ defmodule ExActor.Operations do
       msg: Macro.escape(msg, unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      options = Keyword.merge(
-        options,
-        Module.get_attribute(__MODULE__, :exactor_global_options)
-      )
+      options = Keyword.merge(options, @exactor_global_options)
 
       ExActor.Operations.implement_handler(:definfo, options, msg)
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
@@ -556,10 +557,7 @@ defmodule ExActor.Operations do
       req_def: Macro.escape(req_def, unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      options = Keyword.merge(
-        options,
-        Module.get_attribute(__MODULE__, :exactor_global_options)
-      )
+      options = Keyword.merge(options, @exactor_global_options)
 
       ExActor.Operations.def_request(:defcall, req_def, Keyword.put(options, :export, false))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
@@ -605,10 +603,7 @@ defmodule ExActor.Operations do
       req_def: Macro.escape(req_def, unquote: true),
       options: Macro.escape(options, unquote: true)
     ] do
-      options = Keyword.merge(
-        options,
-        Module.get_attribute(__MODULE__, :exactor_global_options)
-      )
+      options = Keyword.merge(options, @exactor_global_options)
 
       ExActor.Operations.def_request(:defcast, req_def, Keyword.put(options, :export, false))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
