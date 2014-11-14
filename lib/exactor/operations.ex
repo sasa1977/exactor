@@ -134,8 +134,11 @@ defmodule ExActor.Operations do
   @doc false
   def extract_args(args) do
     arg_names =
-      for {_, index} <- Enum.with_index(args) do
-        Macro.var(:"arg#{index}", __MODULE__)
+      for {arg, index} <- Enum.with_index(args) do
+        case arg do
+          {arg_name, _, _} when is_atom(arg_name) and not (arg_name in [:\\, :=]) -> arg
+          _ -> Macro.var(:"arg#{index}", __MODULE__)
+        end
       end
 
     interface_matches = for {arg, arg_name} <- Enum.zip(args, arg_names) do
