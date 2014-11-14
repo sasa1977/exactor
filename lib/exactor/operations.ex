@@ -217,11 +217,11 @@ defmodule ExActor.Operations do
   Examples:
 
       # ignoring the input argument
-      definit do: HashSet.new
+      definit do: initial_state(HashSet.new)
 
       # using the input argument
       definit x do
-        x + 1
+        initial_state(x + 1)
       end
 
       # pattern matching
