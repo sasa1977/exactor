@@ -14,7 +14,33 @@ defmodule ExActor.Responders do
   """
   defmacro initial_state(state) do
     quote do
-      {:ok, unquote(state)}
+      {:ok, unquote(state), Process.get(ExActor.ResponseDecoration) || :infinity}
+    end
+  end
+
+  @doc """
+  When called from `ExActor.Operations.definit/2`, ensures that timeout
+  will be included in each return tuple. This works only for return tuples
+  made by the macro from this module. If you're creating standard `gen_server`
+  response manually, it's your responsibility to include the timeout, or override
+  it if you want to.
+  """
+  defmacro timeout_after(time_ms) do
+    quote do
+      Process.put(ExActor.ResponseDecoration, unquote(time_ms))
+    end
+  end
+
+  @doc """
+  When called from `ExActor.Operations.definit/2`, ensures that `:hibernate`
+  will be included in each return tuple. This works only for return tuples
+  made by the macro from this module. If you're creating standard `gen_server`
+  response manually, it's your responsibility to include the timeout, or override
+  it if you want to.
+  """
+  defmacro hibernate do
+    quote do
+      Process.put(ExActor.ResponseDecoration, :hibernate)
     end
   end
 
@@ -27,7 +53,7 @@ defmodule ExActor.Responders do
   """
   defmacro reply(response) do
     quote do
-      {:reply, unquote(response), unquote(ExActor.Helper.state_var)}
+      {:reply, unquote(response), unquote(ExActor.Helper.state_var), Process.get(ExActor.ResponseDecoration) || :infinity}
     end
   end
 
@@ -41,7 +67,7 @@ defmodule ExActor.Responders do
   """
   defmacro set_and_reply(new_state, response) do
     quote do
-      {:reply, unquote(response), unquote(new_state)}
+      {:reply, unquote(response), unquote(new_state), Process.get(ExActor.ResponseDecoration) || :infinity}
     end
   end
 
@@ -58,7 +84,7 @@ defmodule ExActor.Responders do
   """
   defmacro new_state(state) do
     quote do
-      {:noreply, unquote(state)}
+      {:noreply, unquote(state), Process.get(ExActor.ResponseDecoration) || :infinity}
     end
   end
 
@@ -75,7 +101,7 @@ defmodule ExActor.Responders do
   """
   defmacro noreply do
     quote do
-      {:noreply, unquote(ExActor.Helper.state_var)}
+      {:noreply, unquote(ExActor.Helper.state_var), Process.get(ExActor.ResponseDecoration) || :infinity}
     end
   end
 end
