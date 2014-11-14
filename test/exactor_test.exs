@@ -423,7 +423,8 @@ defmodule ExActorTest do
     use ExActor.GenServer
 
     defstart start(a, b \\ 0, c), do: initial_state(a + b + c)
-    defcall get, state: state, do: reply(state)
+    defcall get(x \\ nil), state: state, do: reply(x || state)
+    defcast set(x \\ 0), do: new_state(x)
   end
 
   test "defaults" do
@@ -432,5 +433,13 @@ defmodule ExActorTest do
 
     {:ok, actor} = TestDefaultsActor.start(1, 2)
     assert TestDefaultsActor.get(actor) == 3
+
+    assert TestDefaultsActor.get(actor, 4) == 4
+
+    TestDefaultsActor.set(actor)
+    assert TestDefaultsActor.get(actor) == 0
+
+    TestDefaultsActor.set(actor, 5)
+    assert TestDefaultsActor.get(actor) == 5
   end
 end

@@ -132,7 +132,7 @@ defmodule ExActor.Operations do
   end
 
   @doc false
-  def start_args(args) do
+  def extract_args(args) do
     arg_names =
       for {_, index} <- Enum.with_index(args) do
         Macro.var(:"arg#{index}", __MODULE__)
@@ -151,6 +151,12 @@ defmodule ExActor.Operations do
         _ -> arg
       end
     end
+    {arg_names, interface_matches, args}
+  end
+
+  @doc false
+  def start_args(args) do
+    {arg_names, interface_matches, args} = extract_args(args)
 
     {payload, match_pattern} =
       case args do
@@ -351,11 +357,23 @@ defmodule ExActor.Operations do
   @doc false
   def def_request(type, req_def, options) do
     {req_name, args} = parse_req_def(req_def)
+    {arg_names, interface_matches, args} = extract_args(args)
+
+    {payload, match_pattern} =
+      case args do
+        [] -> {req_name, req_name}
+        [_|_] ->
+          {
+            quote(do: {unquote_splicing([req_name | arg_names])}),
+            quote(do: {unquote_splicing([req_name | args])})
+          }
+      end
+
     quote do
-      unquote(define_interface(type, req_name, args, options))
+      unquote(define_interface(type, req_name, interface_matches, payload, options))
       unquote(
         if options[:do] do
-          implement_handler(type, options, msg_payload(req_name, args))
+          implement_handler(type, options, match_pattern)
         end
       )
     end
@@ -364,22 +382,16 @@ defmodule ExActor.Operations do
   defp parse_req_def(req_name) when is_atom(req_name), do: {req_name, []}
   defp parse_req_def({req_name, _, args}), do: {req_name, args || []}
 
-  defp msg_payload(req_name, nil), do: req_name
-  defp msg_payload(req_name, []), do: req_name
-  defp msg_payload(req_name, args), do: quote(do: {unquote_splicing([req_name | args])})
-
-
   # Defines the interface function to call/cast
-  defp define_interface(type, req_name, args, options) do
+  defp define_interface(type, req_name, interface_matches, payload, options) do
     unless options[:export] == false do
-      passthrough_args = stub_args(args)
       quote bind_quoted: [
         private: options[:private],
         type: type,
         req_name: req_name,
         server_fun: server_fun(type),
-        interface_args: Macro.escape(interface_args(passthrough_args, options), unquote: true),
-        gen_server_args: Macro.escape(gen_server_args(options, type, msg_payload(req_name, passthrough_args)), unquote: true)
+        interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
+        gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true)
       ] do
         {interface_args, gen_server_args} =
           unless type in [:multicall, :abcast] do
@@ -419,13 +431,6 @@ defmodule ExActor.Operations do
       nil -> [quote(do: server) | passthrough_args]
       true -> [quote(do: server) | passthrough_args]
       _registered -> passthrough_args
-    end
-  end
-
-  defp stub_args([]), do: []
-  defp stub_args(args) do
-    for index <- 1..length(args) do
-      Macro.var(:"arg#{index}", __MODULE__)
     end
   end
 
