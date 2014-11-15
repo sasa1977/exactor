@@ -109,4 +109,21 @@ defmodule ExActor.Responders do
       {:noreply, unquote(ExActor.Helper.state_var), unquote(timeout)}
     end
   end
+
+  @doc """
+  Stops the server.
+
+  Applicable in:
+
+  - `ExActor.Operations.defcall/3`
+  - `ExActor.Operations.defcast/3`
+  - `ExActor.Operations.defabcast/3`
+  - `ExActor.Operations.defmulticall/3`
+  - `ExActor.Operations.defhandleinfo/3`
+  """
+  defmacro stop_server(reason) do
+    quote do
+      {:stop, unquote(reason), unquote(ExActor.Helper.state_var)}
+    end
+  end
 end

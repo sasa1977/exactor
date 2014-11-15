@@ -459,7 +459,7 @@ defmodule ExActorTest do
     defcast noexpire, do: noreply(:infinity)
     defcast expire, do: noreply
 
-    defhandleinfo :timeout, do: {:stop, :normal, nil}
+    defhandleinfo :timeout, do: stop_server(:normal)
   end
 
   test "timeout" do
