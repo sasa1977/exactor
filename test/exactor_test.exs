@@ -244,9 +244,10 @@ defmodule ExActorTest do
     defcall test(1), do: reply(:one)
     defcall test(2), do: reply(:two)
     defcall test(x), when: x < 4, do: reply(:three)
-    defcall test(_), state: 4, do: reply(:four)
-    defcall test(_), state: state, when: state < 6, do: reply(:five)
-    defcall test(_), do: reply(:rest)
+    defcall test(_)
+    defcall test(_), export: false, state: 4, do: reply(:four)
+    defcall test(_), export: false, state: state, when: state < 6, do: reply(:five)
+    defcall test(_), export: false, do: reply(:rest)
   end
 
   test "pattern matching" do

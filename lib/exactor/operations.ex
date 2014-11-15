@@ -107,18 +107,14 @@ defmodule ExActor.Operations do
         {arity, interface_matches, gen_server_fun, gen_server_opts} =
           ExActor.Operations.prepare_start_interface(fun, interface_matches, options, @exactor_global_options)
 
-        unless HashSet.member?(@exported, {fun, arity}) do
-          unless private do
-            def unquote(fun)(unquote_splicing(interface_matches)) do
-              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
-            end
-          else
-            defp unquote(fun)(unquote_splicing(interface_matches)) do
-              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
-            end
+        unless private do
+          def unquote(fun)(unquote_splicing(interface_matches)) do
+            GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
           end
-
-          @exported HashSet.put(@exported, {fun, arity})
+        else
+          defp unquote(fun)(unquote_splicing(interface_matches)) do
+            GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+          end
         end
       end
 
@@ -136,15 +132,20 @@ defmodule ExActor.Operations do
     arg_names =
       for {arg, index} <- Enum.with_index(args) do
         case arg do
-          {arg_name, _, _} when is_atom(arg_name) and not (arg_name in [:\\, :=]) -> arg
+          {:\\, _, [{arg_name, _, _} = inner_arg, _]}
+            when is_atom(arg_name) and arg_name != :=
+          ->
+            inner_arg
+          {arg_name, _, _} when is_atom(arg_name) and not (arg_name in [:_, :\\, :=]) -> arg
           _ -> Macro.var(:"arg#{index}", __MODULE__)
         end
       end
 
     interface_matches = for {arg, arg_name} <- Enum.zip(args, arg_names) do
       case arg do
-        {:\\, context, [_, default]} -> {:\\, context, [arg_name, default]}
-        _ -> arg_name
+        {:\\, context, [match, default]} ->
+          {:\\, context, [quote(do: unquote(match) = unquote(arg_name)), default]}
+        match -> quote(do: unquote(match) = unquote(arg_name))
       end
     end
 
@@ -407,18 +408,14 @@ defmodule ExActor.Operations do
           end
 
         arity = length(interface_args)
-        unless HashSet.member?(@exported, {req_name, arity}) do
-          unless private do
-            def unquote(req_name)(unquote_splicing(interface_args)) do
-              GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-            end
-          else
-            defp unquote(req_name)(unquote_splicing(interface_args)) do
-              GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-            end
+        unless private do
+          def unquote(req_name)(unquote_splicing(interface_args)) do
+            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
           end
-
-          @exported HashSet.put(@exported, {req_name, arity})
+        else
+          defp unquote(req_name)(unquote_splicing(interface_args)) do
+            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          end
         end
       end
     end

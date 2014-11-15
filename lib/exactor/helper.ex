@@ -14,7 +14,6 @@ defmodule ExActor.Helper do
   def init_generation_state(opts) do
     quote do
       @exactor_global_options unquote(opts)
-      @exported HashSet.new
     end
   end
 
