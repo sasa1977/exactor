@@ -17,6 +17,10 @@
 
 ## Migration from 1.0
 
+For migration examples, check [here](https://github.com/sasa1977/con_cache/commit/2ef8151d43dc9c4816814ffa6c4135ff453c59e1) and [here](https://github.com/sasa1977/workex/commit/7f32aad492b25d89d1f5c2f285c624f16a02022e)
+
+A non exhaustive list of changes you may have to do in your project:
+
 - Add explicit starters via `defstart`. If you need to support `start` and `start_link`, you can do it like this:
 
 ```elixir
