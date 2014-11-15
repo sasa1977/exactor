@@ -445,7 +445,7 @@ defmodule ExActorTest do
 
 
   defmodule TestGlobalTimeout do
-    use ExActor.GenServer, export: :test_global_timeout
+    use ExActor.GenServer, export: TestGlobalTimeout
 
     defstart start(hibernate? \\ false) do
       if hibernate? do
@@ -466,13 +466,13 @@ defmodule ExActorTest do
     TestGlobalTimeout.start
     TestGlobalTimeout.noexpire
     :timer.sleep(100)
-    assert is_pid(Process.whereis(:test_global_timeout))
+    assert is_pid(Process.whereis(TestGlobalTimeout))
 
     TestGlobalTimeout.expire
     :timer.sleep(100)
-    assert nil == Process.whereis(:test_global_timeout)
+    assert nil == Process.whereis(TestGlobalTimeout)
 
     TestGlobalTimeout.start(true)
-    assert is_pid(Process.whereis(:test_global_timeout))
+    assert is_pid(Process.whereis(TestGlobalTimeout))
   end
 end

@@ -19,16 +19,13 @@ defmodule ExActor.Empty do
       use ExActor.Empty, export: {:global, :global_registered_name}
   """
   defmacro __using__(opts) do
-    ExActor.Helper.init_global_options(__CALLER__, opts)
-
     quote do
       @behaviour :gen_server
 
       import ExActor.Operations
       import ExActor.Responders
 
-      unquote(ExActor.Helper.def_initializer(__CALLER__))
-      unquote(ExActor.Helper.init_exported)
+      unquote(ExActor.Helper.init_generation_state(opts))
     end
   end
 end

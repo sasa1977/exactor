@@ -200,7 +200,7 @@ defmodule ExActor.Operations do
       unless options[:gen_server_opts] == :runtime do
         case global_options[:export] do
           default when default in [nil, false] -> []
-          name -> [name: name]
+          name -> [name: Macro.escape(name)]
         end ++ (options[:gen_server_opts] || [])
       else
         Macro.var(:gen_server_opts, __MODULE__)
@@ -455,7 +455,7 @@ defmodule ExActor.Operations do
       local when is_atom(local) -> local
       {:local, local} -> local
       {:global, _} = global -> global
-      {:{}, _, [:via, _, _]} = via -> via
+      {:via, _, _} = via -> Macro.escape(via)
     end
   end
 
