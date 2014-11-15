@@ -292,7 +292,6 @@ defmodule ExActorTest do
     defstart start, do: initial_state(HashDict.new)
 
     delegate_to HashDict do
-      init
       query get/2
       query size/1
       trans put/3
