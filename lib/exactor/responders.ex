@@ -12,9 +12,10 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defstart/3`
   - `ExActor.Operations.definit/2`
   """
-  defmacro initial_state(state) do
+  defmacro initial_state(state, timeout \\ nil) do
+    timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
     quote do
-      {:ok, unquote(state), Process.get(ExActor.ResponseDecoration) || :infinity}
+      {:ok, unquote(state), unquote(timeout)}
     end
   end
 
@@ -51,9 +52,10 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defcall/3`
   - `ExActor.Operations.defmulticall/3`
   """
-  defmacro reply(response) do
+  defmacro reply(response, timeout \\ nil) do
+    timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
     quote do
-      {:reply, unquote(response), unquote(ExActor.Helper.state_var), Process.get(ExActor.ResponseDecoration) || :infinity}
+      {:reply, unquote(response), unquote(ExActor.Helper.state_var), unquote(timeout)}
     end
   end
 
@@ -65,9 +67,10 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defcall/3`
   - `ExActor.Operations.defmulticall/3`
   """
-  defmacro set_and_reply(new_state, response) do
+  defmacro set_and_reply(new_state, response, timeout \\ nil) do
+    timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
     quote do
-      {:reply, unquote(response), unquote(new_state), Process.get(ExActor.ResponseDecoration) || :infinity}
+      {:reply, unquote(response), unquote(new_state), unquote(timeout)}
     end
   end
 
@@ -82,9 +85,10 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defmulticall/3`
   - `ExActor.Operations.definfo/3`
   """
-  defmacro new_state(state) do
+  defmacro new_state(state, timeout \\ nil) do
+    timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
     quote do
-      {:noreply, unquote(state), Process.get(ExActor.ResponseDecoration) || :infinity}
+      {:noreply, unquote(state), unquote(timeout)}
     end
   end
 
@@ -99,9 +103,10 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defmulticall/3`
   - `ExActor.Operations.definfo/3`
   """
-  defmacro noreply do
+  defmacro noreply(timeout \\ nil) do
+    timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
     quote do
-      {:noreply, unquote(ExActor.Helper.state_var), Process.get(ExActor.ResponseDecoration) || :infinity}
+      {:noreply, unquote(ExActor.Helper.state_var), unquote(timeout)}
     end
   end
 end
