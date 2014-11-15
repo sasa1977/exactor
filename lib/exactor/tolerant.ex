@@ -8,7 +8,7 @@ defmodule ExActor.Tolerant do
 
   Example:
 
-      defmodule MyActor do
+      defmodule MyServer do
         use ExActor.Tolerant
         ...
       end

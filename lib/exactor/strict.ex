@@ -10,7 +10,7 @@ defmodule ExActor.Strict do
 
   Example:
 
-      defmodule MyActor do
+      defmodule MyServer do
         use ExActor.Strict
 
         # without this the server can't be started

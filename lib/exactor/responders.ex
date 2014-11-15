@@ -20,11 +20,13 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  When called from `ExActor.Operations.definit/2`, ensures that timeout
-  will be included in each return tuple. This works only for return tuples
-  made by the macro from this module. If you're creating standard `gen_server`
-  response manually, it's your responsibility to include the timeout, or override
-  it if you want to.
+  Ensures that timeout will be included in each return tuple.
+
+  Must be called from `ExActor.Operations.defstart/2` (or `definit`).
+
+  This works only for return tuples made by macros from this module. If you're
+  creating standard `gen_server` response manually, it's your responsibility to
+  include the timeout, or override it if you want to.
   """
   defmacro timeout_after(time_ms) do
     quote do
@@ -33,11 +35,13 @@ defmodule ExActor.Responders do
   end
 
   @doc """
-  When called from `ExActor.Operations.definit/2`, ensures that `:hibernate`
-  will be included in each return tuple. This works only for return tuples
-  made by the macro from this module. If you're creating standard `gen_server`
-  response manually, it's your responsibility to include the timeout, or override
-  it if you want to.
+  Ensures that `:hibernate` will be included in each return tuple.
+
+  Must be called from `ExActor.Operations.defstart/2` (or `definit`).
+
+  This works only for return tuples made by macros from this module. If you're
+  creating standard `gen_server` response manually, it's your responsibility to
+  include the `:hibernate`, or override it if you want to.
   """
   defmacro hibernate do
     quote do
@@ -49,6 +53,7 @@ defmodule ExActor.Responders do
   Replies without changing the state.
 
   Applicable in:
+
   - `ExActor.Operations.defcall/3`
   - `ExActor.Operations.defmulticall/3`
   """

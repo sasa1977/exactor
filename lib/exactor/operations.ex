@@ -1,6 +1,6 @@
 defmodule ExActor.Operations do
   @moduledoc """
-  Macros that can be used for simpler definition of `gen_server` operations
+  Macros that can be used for simpler definition of `GenServer` operations
   such as casts or calls.
   """
 
@@ -34,7 +34,7 @@ defmodule ExActor.Operations do
 
       ...
 
-      MyActor.start(x, y, name: :foo, spawn_opts: [min_heap_size: 10000])
+      MyServer.start(x, y, name: :foo, spawn_opts: [min_heap_size: 10000])
 
   Body can be omitted. In this case, just the interface function is generated.
   This can be useful if you want to define both `start` and `start_link`:
@@ -61,7 +61,7 @@ defmodule ExActor.Operations do
     There will be just one interface function for the given arity.
   - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
 
-  Payload format (args passed to `init/1`):
+  Request format (arg passed to `init/1`):
 
   - no arguments -> `nil`
   - one arguments -> `{x}`
@@ -76,7 +76,7 @@ defmodule ExActor.Operations do
 
   Can be useful when you need to do pre/post processing in the caller process.
 
-      defmodule MyActor do
+      defmodule MyServer do
         def start_link(x, y) do
           ...
 
@@ -211,20 +211,10 @@ defmodule ExActor.Operations do
 
 
   @doc """
-  Defines the initializer callback.
+  Similar to `defstart/3` but generates just the `init` clause.
 
-  Examples:
-
-      # ignoring the input argument
-      definit do: initial_state(HashSet.new)
-
-      # using the input argument
-      definit x do
-        initial_state(x + 1)
-      end
-
-      # pattern matching
-      definit x, when: ..., do: ...
+  Note: keep in mind that `defstart` wraps arguments in a tuple. If you want to
+  handle `defstart start(x)`, you need to define `definit {x}`
   """
   defmacro definit(arg \\ quote(do: _), opts), do: do_definit([{:arg, arg} | opts])
 
@@ -243,7 +233,7 @@ defmodule ExActor.Operations do
 
 
   @doc """
-  Defines the cast callback clause and a corresponding interface fun.
+  Defines the cast callback clause and the corresponding interface fun.
 
   Examples:
 
@@ -258,10 +248,19 @@ defmodule ExActor.Operations do
       defcast a(2), do: ...
       defcast a(x), state: 1, do: ...
       defcast a(x), when: x > 1, do: ...
-      defcast a(x), state: state, when: state > 1, do: ...
       defcast a(_), do: ...
 
-  Payload formats are the same as in `defcall/3`
+      # default args
+      defcast a(x \\\\ nil), do: ...
+
+      # Body-less clause - generates interface function which calls
+      # GenServer.cast but doesn't generate the handler. You can use
+      # defhandlecast to generate the handler. This is useful if you
+      # need to pattern match on the state
+      defcast a(x)
+      defhandlecast a(x), state: state, when: state > 0, do: ...
+
+  Request format is the same as in `defcall/3`
   """
   defmacro defcast(req_def, options \\ [], body \\ []) do
     generate_funs(:defcast, req_def, options ++ body)
@@ -289,7 +288,7 @@ defmodule ExActor.Operations do
 
 
   @doc """
-  Defines the call callback clause and a corresponding interface fun.
+  Defines the call callback clause and the corresponding interface fun.
 
   Examples:
 
@@ -308,10 +307,19 @@ defmodule ExActor.Operations do
       defcall a(2), do: ...
       defcall a(x), state: 1, do: ...
       defcall a(x), when: x > 1, do: ...
-      defcall a(x), state: state, when: state > 1, do: ...
       defcall a(_), do: ...
 
-  Payload format (args passed to `handle_call/3`):
+      # default args
+      defcall a(x \\ nil), do: ...
+
+      # Body-less clause - generates interface function which calls
+      # GenServer.call but doesn't generate the handler. You can use
+      # defhandlecall to generate the handler. This is useful if you
+      # need to pattern match on the state
+      defcall a(x)
+      defhandlecall a(x), state: state, when: state > 0, do: ...
+
+  Request format (passed to `handle_call/3`):
 
   - no arguments -> `:my_request`
   - one arguments -> `{:my_request, x}`
@@ -341,6 +349,22 @@ defmodule ExActor.Operations do
     generate_funs(:defcall, req_def, [{:private, true} | options] ++ body)
   end
 
+  @doc """
+  Similar to `defcall/3`, but generates just the `handle_call` clause,
+  without creating the interface function.
+  """
+  defmacro defhandlecall(req_def, options \\ [], body \\ []) do
+    generate_request_def(:defcall, req_def, options ++ body)
+  end
+
+  @doc """
+  Similar to `defcast/3`, but generates just the `handle_call` clause,
+  without creating the interface function.
+  """
+  defmacro defhandlecast(req_def, options \\ [], body \\ []) do
+    generate_request_def(:defcast, req_def, options ++ body)
+  end
+
 
 
   # Generation of call/cast functions. Essentially, this is just
@@ -366,14 +390,6 @@ defmodule ExActor.Operations do
         implement_request(type, req_def, options)
       end)
     end
-  end
-
-  defmacro defhandlecall(req_def, options \\ [], body \\ []) do
-    generate_request_def(:defcall, req_def, options ++ body)
-  end
-
-  defmacro defhandlecast(req_def, options \\ [], body \\ []) do
-    generate_request_def(:defcast, req_def, options ++ body)
   end
 
   defp generate_request_def(type, req_def, options) do
@@ -582,15 +598,15 @@ defmodule ExActor.Operations do
 
       ...
 
-      # If the actor is locally registered via `:export` option
-      MyActor.my_request(2, 3)
-      MyActor.my_request(nodes, 2, 3)
+      # If the process is locally registered via `:export` option
+      MyServer.my_request(2, 3)
+      MyServer.my_request(nodes, 2, 3)
 
-      # The actor is not locally registered via `:export` option
-      MyActor.my_request(:local_alias, 2, 3)
-      MyActor.my_request(nodes, :local_alias, 2, 3)
+      # The process is not locally registered via `:export` option
+      MyServer.my_request(:local_alias, 2, 3)
+      MyServer.my_request(nodes, :local_alias, 2, 3)
 
-  Payload formats are the same as in `defcall/3`
+  Request format is the same as in `defcall/3`
   """
   defmacro defmulticall(req_def, options \\ [], body \\ []) do
     do_defmulticall(req_def, options ++ body)
@@ -628,15 +644,15 @@ defmodule ExActor.Operations do
 
       ...
 
-      # If the actor is locally registered via `:export` option
-      MyActor.my_request(2, 3)
-      MyActor.my_request(nodes, 2, 3)
+      # If the process is locally registered via `:export` option
+      MyServer.my_request(2, 3)
+      MyServer.my_request(nodes, 2, 3)
 
-      # The actor is not locally registered via `:export` option
-      MyActor.my_request(:local_alias, 2, 3)
-      MyActor.my_request(nodes, :local_alias, 2, 3)
+      # The process is not locally registered via `:export` option
+      MyServer.my_request(:local_alias, 2, 3)
+      MyServer.my_request(nodes, :local_alias, 2, 3)
 
-  Payload formats are the same as in `defcall/3`
+  Request format is the same as in `defcall/3`
   """
   defmacro defabcast(req_def, options \\ [], body \\ []) do
     do_defabcast(req_def, options ++ body)

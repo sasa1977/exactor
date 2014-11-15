@@ -5,7 +5,7 @@ defmodule ExActor.GenServer do
 
   Example:
 
-      defmodule MyActor do
+      defmodule MyServer do
         use ExActor.GenServer
         ...
       end

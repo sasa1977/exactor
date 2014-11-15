@@ -6,7 +6,7 @@ defmodule ExActor.Empty do
 
   Example:
 
-      defmodule MyActor do
+      defmodule MyServer do
         use ExActor.Empty
 
         # define all gen_server required functions
