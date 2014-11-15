@@ -1,6 +1,6 @@
 defmodule ExActor.Strict do
   @moduledoc """
-  Predefine that provides strict default implementation for `gen_server` 
+  Predefine that provides strict default implementation for `gen_server`
   required functions. Default implementation will cause the `gen_server` to
   be stopped. This predefine is useful if you want to need only some parts of
   the server to be implemented, and want to fail for everything else that
@@ -10,7 +10,7 @@ defmodule ExActor.Strict do
 
   Example:
 
-      defmodule MyActor do
+      defmodule MyServer do
         use ExActor.Strict
 
         # without this the server can't be started
@@ -19,9 +19,6 @@ defmodule ExActor.Strict do
         ...
       end
 
-      # Setting the initial state:
-      use ExActor.Strict, initial_state: HashDict.new
-
       # Locally registered name:
       use ExActor.Strict, export: :some_registered_name
 
@@ -29,17 +26,13 @@ defmodule ExActor.Strict do
       use ExActor.Strict, export: {:global, :global_registered_name}
   """
   defmacro __using__(opts) do
-    ExActor.Helper.init_global_options(__CALLER__, opts)
-
     quote do
       use ExActor.Behaviour.Strict
 
       import ExActor.Operations
       import ExActor.Responders
-      use ExActor.Starters
-      
-      unquote(ExActor.Helper.def_initializer(__CALLER__))
-      unquote(ExActor.Helper.init_exported)
+
+      unquote(ExActor.Helper.init_generation_state(opts))
     end
   end
 end

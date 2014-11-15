@@ -1,3 +1,35 @@
+# v2.0.0
+
+## New features
+- `defstart` macro which simplifies definition of starters.
+- `defmulticall` and `defabcast` macros for distributed support.
+- `defhandlecall`, `defhandlecast`, and `defhandleinfo` for implementation of handlers only
+- default arguments can be specified via `\\`
+- `defcall` and `defcast` can be called without specifying the body
+- Support for `timeout` and `hibernate` replies.
+
+## Breaking changes
+- Pattern matching now works on interface functions as well (previously it was done only in handler functions).
+- Starter functions are not automatically generated anymore. You can use `defstart` macro to create them.
+- When calling `use ExActor.*` options `:initial_state`, and `:starters` are not available anymore.
+- `definfo` is renamed to `defhandleinfo`
+- Option `export: false` is not available in `defcall` and `defcast`. If you want to implement just handlers, use `defhandle*`
+
+## Migration from 1.0
+
+- Add explicit starters via `defstart`. If you need to support `start` and `start_link`, you can do it like this:
+
+```elixir
+defstart start(x, y)
+defstart start_link(x, y) do
+  # initialization runs for both start/2 and start_link/2
+end
+```
+
+- Replace all `definit` with `defstart` if possible, or use body-less `defstart` with an explicit `definit`.
+- If you used `initial_state`, set the state explicitly in `defstart`.
+- Replace `definfo` with `defhandleinfo`.
+
 # v1.0.0
 - migrated to Elixir 1.0.0
 

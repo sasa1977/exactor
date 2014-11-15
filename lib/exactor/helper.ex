@@ -11,27 +11,13 @@ defmodule ExActor.Helper do
     )
   end
 
-  def init_global_options(caller, opts) do
-    Module.put_attribute(caller.module, :exactor_global_options, opts || [])
-  end
-
-  def init_exported do
+  def init_generation_state(opts) do
     quote do
-      @exported HashSet.new
+      @exactor_global_options unquote(opts)
     end
   end
 
-  def def_initializer(caller) do
-    initial_state =
-      Module.get_attribute(caller.module, :exactor_global_options)
-      |> Dict.fetch(:initial_state)
-
-    case initial_state do
-      :error -> nil
-      {:ok, state} ->
-        quote do
-          definit do: initial_state(unquote(state))
-        end
-    end
+  def state_var do
+    Macro.var(:___state_var, ExActor)
   end
 end

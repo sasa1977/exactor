@@ -9,12 +9,13 @@ defmodule ExActor.Delegator do
 
   For example:
 
-      defmodule HashDictActor do
+      defmodule HashDictServer do
         use ExActor.GenServer
         import ExActor.Delegator
 
+        defstart start_link, do: initial_state(HashDict.new)
+
         delegate_to HashDict do
-          init
           query get/2
           trans put/3
         end
@@ -22,10 +23,10 @@ defmodule ExActor.Delegator do
 
   This is the same as:
 
-      defmodule HashDictActor do
+      defmodule HashDictServer do
         use ExActor.GenServer
 
-        definit do: HashDict.new
+        defstart start_link, do: initial_state(HashDict.new)
 
         defcall get(k), state: state do
           HashDict.get(state, k)

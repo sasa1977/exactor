@@ -1,7 +1,7 @@
 defmodule ExActor.Mixfile do
   use Mix.Project
 
-  @version "1.0.0"
+  @version "2.0.0"
 
   def project do
     [
@@ -18,7 +18,7 @@ defmodule ExActor.Mixfile do
           "Docs" => "http://sasa1977.github.io/exactor/"
         }
       ],
-      description: "Simplified creation of gen_server based actors in Elixir.",
+      description: "Simplified creation of GenServer based processes in Elixir.",
       docs: [
         readme: true,
         main: "README",

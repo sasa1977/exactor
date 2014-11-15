@@ -1,12 +1,13 @@
 defmodule PredefinesTest do
   use ExUnit.Case
 
-  defmodule TolerantActor do
+  defmodule TolerantServer do
     use ExActor.Tolerant
+    defstart start
   end
 
   test "tolerant" do
-    {:ok, pid} = TolerantActor.start
+    {:ok, pid} = TolerantServer.start
     GenServer.cast(pid, :undefined_message)
     send(pid, :undefined_message)
     assert match?(
@@ -16,13 +17,14 @@ defmodule PredefinesTest do
   end
 
 
-  defmodule NonStartableStrictActor do
+  defmodule NonStartableStrictServer do
     use ExActor.Strict
   end
 
 
-  defmodule StrictActor do
-    use ExActor.Strict, initial_state: nil
+  defmodule StrictServer do
+    use ExActor.Strict
+    defstart start, do: initial_state(nil)
   end
 
   setup do
@@ -33,11 +35,11 @@ defmodule PredefinesTest do
   end
 
   test "strict" do
-    assert match?({:error, :badinit}, NonStartableStrictActor.start)
+    assert match?({:error, :badinit}, GenServer.start(NonStartableStrictServer, nil))
 
-    assert_invalid(StrictActor, &GenServer.cast(&1, :undefined_message))
-    assert_invalid(StrictActor, &send(&1, :undefined_message))
-    assert_invalid(StrictActor,
+    assert_invalid(StrictServer, &GenServer.cast(&1, :undefined_message))
+    assert_invalid(StrictServer, &send(&1, :undefined_message))
+    assert_invalid(StrictServer,
       fn(pid) ->
         assert match?(
           {{:bad_call, :undefined_message}, _},
@@ -58,14 +60,15 @@ defmodule PredefinesTest do
 
 
 
-  defmodule GenServerActor do
+  defmodule GenServerServer do
     use ExActor.GenServer
+    defstart start
   end
 
   test "gen_server" do
-    assert_invalid(GenServerActor, &GenServer.cast(&1, :undefined_message))
+    assert_invalid(GenServerServer, &GenServer.cast(&1, :undefined_message))
 
-    assert_invalid(GenServerActor,
+    assert_invalid(GenServerServer,
       fn(pid) ->
         send(pid, :undefined_message)
 
@@ -79,8 +82,9 @@ defmodule PredefinesTest do
 
 
 
-  defmodule EmptyActor do
+  defmodule EmptyServer do
     use ExActor.Empty
+    defstart start
 
     def init(args), do: { :ok, args }
     def handle_call(_msg, _from, state), do: {:reply, 1, state}
@@ -91,7 +95,7 @@ defmodule PredefinesTest do
   end
 
   test "empty" do
-    {:ok, pid} = EmptyActor.start
+    {:ok, pid} = EmptyServer.start
     GenServer.cast(pid, :undefined_message)
     send(pid, :undefined_message)
     assert GenServer.call(pid, :undefined_message) == 1
