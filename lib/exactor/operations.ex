@@ -363,7 +363,7 @@ defmodule ExActor.Operations do
     quote do
       unquote(define_interface(type, req_name, interface_matches, payload, options))
       unquote(if options[:do] do
-        generate_request_def(type, req_def, options)
+        implement_request(type, req_def, options)
       end)
     end
   end
