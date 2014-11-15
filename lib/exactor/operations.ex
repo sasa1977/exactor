@@ -179,7 +179,7 @@ defmodule ExActor.Operations do
       unless options[:gen_server_opts] == :runtime do
         interface_matches
       else
-        interface_matches ++ [Macro.var(:gen_server_opts, __MODULE__)]
+        interface_matches ++ [quote(do: unquote(Macro.var(:gen_server_opts, __MODULE__)) \\ [])]
       end
 
     arity = length(interface_matches)
