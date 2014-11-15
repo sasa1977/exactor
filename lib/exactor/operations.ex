@@ -52,7 +52,7 @@ defmodule ExActor.Operations do
       end
 
   If you want to handle various versions, you can just define start heads without the body,
-  and then use `definfo/2` or just implement `handle_info/1`.
+  and then use `defhandleinfo/2` or just implement `handle_info/1`.
 
   Other notes:
 
@@ -103,18 +103,16 @@ defmodule ExActor.Operations do
     ] do
       {interface_matches, payload, match_pattern} = ExActor.Operations.start_args(args)
 
-      unless options[:export] == false do
-        {arity, interface_matches, gen_server_fun, gen_server_opts} =
-          ExActor.Operations.prepare_start_interface(fun, interface_matches, options, @exactor_global_options)
+      {arity, interface_matches, gen_server_fun, gen_server_opts} =
+        ExActor.Operations.prepare_start_interface(fun, interface_matches, options, @exactor_global_options)
 
-        unless private do
-          def unquote(fun)(unquote_splicing(interface_matches)) do
-            GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
-          end
-        else
-          defp unquote(fun)(unquote_splicing(interface_matches)) do
-            GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
-          end
+      unless private do
+        def unquote(fun)(unquote_splicing(interface_matches)) do
+          GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+        end
+      else
+        defp unquote(fun)(unquote_splicing(interface_matches)) do
+          GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
         end
       end
 
@@ -360,6 +358,46 @@ defmodule ExActor.Operations do
 
   @doc false
   def def_request(type, req_def, options) do
+    {req_name, interface_matches, payload, _} = req_args(req_def)
+
+    quote do
+      unquote(define_interface(type, req_name, interface_matches, payload, options))
+      unquote(if options[:do] do
+        generate_request_def(type, req_def, options)
+      end)
+    end
+  end
+
+  defmacro defhandlecall(req_def, options \\ [], body \\ []) do
+    generate_request_def(:defcall, req_def, options ++ body)
+  end
+
+  defmacro defhandlecast(req_def, options \\ [], body \\ []) do
+    generate_request_def(:defcast, req_def, options ++ body)
+  end
+
+  defp generate_request_def(type, req_def, options) do
+    quote bind_quoted: [
+      type: type,
+      req_def: Macro.escape(req_def, unquote: true),
+      options: Macro.escape(options, unquote: true)
+    ] do
+      ExActor.Operations.implement_request(type, req_def, Keyword.merge(options, @exactor_global_options))
+      |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
+    end
+  end
+
+  @doc false
+  def implement_request(type, req_def, options) do
+    {_, _, _, match_pattern} = req_args(req_def)
+
+    quote do
+      unquote(implement_handler(type, options, match_pattern))
+    end
+  end
+
+
+  defp req_args(req_def) do
     {req_name, args} = parse_req_def(req_def)
     {arg_names, interface_matches, args} = extract_args(args)
 
@@ -373,14 +411,7 @@ defmodule ExActor.Operations do
           }
       end
 
-    quote do
-      unquote(define_interface(type, req_name, interface_matches, payload, options))
-      unquote(
-        if options[:do] do
-          implement_handler(type, options, match_pattern)
-        end
-      )
-    end
+    {req_name, interface_matches, payload, match_pattern}
   end
 
   defp parse_req_def(req_name) when is_atom(req_name), do: {req_name, []}
@@ -388,28 +419,43 @@ defmodule ExActor.Operations do
 
   # Defines the interface function to call/cast
   defp define_interface(type, req_name, interface_matches, payload, options) do
-    unless options[:export] == false do
-      quote bind_quoted: [
-        private: options[:private],
-        type: type,
-        req_name: req_name,
-        server_fun: server_fun(type),
-        interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
-        gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true)
-      ] do
-        {interface_args, gen_server_args} =
-          unless type in [:multicall, :abcast] do
-            {interface_args, gen_server_args}
-          else
-            {
-              [quote(do: nodes \\ [node() | :erlang.nodes()]) | interface_args],
-              [quote(do: nodes) | gen_server_args]
-            }
-          end
+    quote bind_quoted: [
+      private: options[:private],
+      type: type,
+      req_name: req_name,
+      server_fun: server_fun(type),
+      interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
+      gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true),
+      guard: Macro.escape(options[:when], unquote: true)
+    ] do
+      {interface_args, gen_server_args} =
+        unless type in [:multicall, :abcast] do
+          {interface_args, gen_server_args}
+        else
+          {
+            [quote(do: nodes \\ [node() | :erlang.nodes()]) | interface_args],
+            [quote(do: nodes) | gen_server_args]
+          }
+        end
 
-        arity = length(interface_args)
-        unless private do
+      arity = length(interface_args)
+      unless private do
+        if guard do
+          def unquote(req_name)(unquote_splicing(interface_args))
+            when unquote(guard)
+          do
+            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          end
+        else
           def unquote(req_name)(unquote_splicing(interface_args)) do
+            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          end
+        end
+      else
+        if guard do
+          defp unquote(req_name)(unquote_splicing(interface_args))
+            when unquote(guard)
+          do
             GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
           end
         else
@@ -507,15 +553,15 @@ defmodule ExActor.Operations do
 
   Examples:
 
-      definfo :some_message, do: ...
-      definfo :another_message, state: ..., do:
+      defhandleinfo :some_message, do: ...
+      defhandleinfo :another_message, state: ..., do:
   """
-  defmacro definfo(msg, opts \\ [], body) do
-    impl_definfo(msg, opts ++ body)
+  defmacro defhandleinfo(msg, opts \\ [], body) do
+    impl_defhandleinfo(msg, opts ++ body)
   end
 
   # Implements handle_info
-  defp impl_definfo(msg, options) do
+  defp impl_defhandleinfo(msg, options) do
     quote bind_quoted: [
       msg: Macro.escape(msg, unquote: true),
       options: Macro.escape(options, unquote: true)
@@ -564,7 +610,7 @@ defmodule ExActor.Operations do
     ] do
       options = Keyword.merge(options, @exactor_global_options)
 
-      ExActor.Operations.def_request(:defcall, req_def, Keyword.put(options, :export, false))
+      ExActor.Operations.implement_request(:defcall, req_def, options)
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
 
       ExActor.Operations.def_request(:multicall, req_def, Keyword.drop(options, [:do]))
@@ -610,7 +656,7 @@ defmodule ExActor.Operations do
     ] do
       options = Keyword.merge(options, @exactor_global_options)
 
-      ExActor.Operations.def_request(:defcast, req_def, Keyword.put(options, :export, false))
+      ExActor.Operations.implement_request(:defcast, req_def, options)
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
 
       ExActor.Operations.def_request(:abcast, req_def, Keyword.drop(options, [:do]))

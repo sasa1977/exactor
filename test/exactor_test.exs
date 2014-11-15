@@ -19,7 +19,7 @@ defmodule ExActorTest do
 
     defcall timeout, timeout: 10, do: (:timer.sleep(100); noreply)
 
-    defcall unexported, export: false, do: reply(:unexported)
+    defhandlecall unexported, do: reply(:unexported)
     def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
@@ -45,17 +45,17 @@ defmodule ExActorTest do
       reply(:ok)
     end
 
-    definfo {:msg1, from} do
+    defhandleinfo {:msg1, from} do
       send(from, :reply_msg1)
       noreply
     end
 
-    definfo {:msg_get, from}, state: state do
+    defhandleinfo {:msg_get, from}, state: state do
       send(from, state)
       noreply
     end
 
-    definfo sender, when: is_pid(sender) do
+    defhandleinfo sender, when: is_pid(sender) do
       send(sender, :echo)
       noreply
     end
@@ -245,9 +245,9 @@ defmodule ExActorTest do
     defcall test(2), do: reply(:two)
     defcall test(x), when: x < 4, do: reply(:three)
     defcall test(_)
-    defcall test(_), export: false, state: 4, do: reply(:four)
-    defcall test(_), export: false, state: state, when: state < 6, do: reply(:five)
-    defcall test(_), export: false, do: reply(:rest)
+    defhandlecall test(_), state: 4, do: reply(:four)
+    defhandlecall test(_), state: state, when: state < 6, do: reply(:five)
+    defhandlecall test(_), do: reply(:rest)
   end
 
   test "pattern matching" do
@@ -460,7 +460,7 @@ defmodule ExActorTest do
     defcast noexpire, do: noreply(:infinity)
     defcast expire, do: noreply
 
-    definfo :timeout, do: {:stop, :normal, nil}
+    defhandleinfo :timeout, do: {:stop, :normal, nil}
   end
 
   test "timeout" do

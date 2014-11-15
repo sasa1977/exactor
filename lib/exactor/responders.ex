@@ -83,7 +83,7 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defcast/3`
   - `ExActor.Operations.defabcast/3`
   - `ExActor.Operations.defmulticall/3`
-  - `ExActor.Operations.definfo/3`
+  - `ExActor.Operations.defhandleinfo/3`
   """
   defmacro new_state(state, timeout \\ nil) do
     timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)
@@ -101,7 +101,7 @@ defmodule ExActor.Responders do
   - `ExActor.Operations.defcast/3`
   - `ExActor.Operations.defabcast/3`
   - `ExActor.Operations.defmulticall/3`
-  - `ExActor.Operations.definfo/3`
+  - `ExActor.Operations.defhandleinfo/3`
   """
   defmacro noreply(timeout \\ nil) do
     timeout = timeout || quote(do: Process.get(ExActor.ResponseDecoration) || :infinity)

@@ -88,9 +88,9 @@ defcast c, do: noreply                              # doesn't change state
 defcast d, do: new_state(new_state)                 # sets new state
 defcast f, do: {:noreply, new_state}                # standard gen_server response
 
-definfo c, do: noreply                              # doesn't change state
-definfo d, do: new_state(new_state)                 # sets new state
-definfo f, do: {:noreply, new_state}                # standard gen_server response
+defhandleinfo c, do: noreply                        # doesn't change state
+defhandleinfo d, do: new_state(new_state)           # sets new state
+defhandleinfo f, do: {:noreply, new_state}          # standard gen_server response
 ```
 
 ## Simplified initialization
@@ -197,8 +197,8 @@ Cache.get_or_create(:foo, fn -> 2 end)  # 1
 ## Handling messages
 
 ```elixir
-definfo :some_message, do:
-definfo :another_message, state: ..., do:
+defhandleinfo :some_message, do:
+defhandleinfo :another_message, state: ..., do:
 ```
 
 ## Pattern matching
@@ -215,7 +215,7 @@ defcall a(x), when: x > 1, do: ...
 defcall a(x), state: state, when: state > 1, do: ...
 defcall a(_), do: ...
 
-definfo :msg, state: {...}, when: ..., do: ...
+defhandleinfo :msg, state: {...}, when: ..., do: ...
 ```
 
 Note: all start/call/cast matches take place at the `handle_*` callbacks. Generated interface functions simply pass the arguments to appropriate `gen_server` function. Consequently, if a match fails, the server will crash.
