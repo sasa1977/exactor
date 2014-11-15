@@ -63,7 +63,7 @@ The module definition above is translated at compile-time into something like:
 defmodule Calculator do
   use GenServer
 
-  def start_link, do: GenServer.start_link(__MODULE__)
+  def start_link, do: GenServer.start_link(__MODULE__, nil)
   def stop(pid), do: GenServer.cast(pid, :stop)
 
   def inc(pid, x), do: GenServer.cast(pid, {:inc, x})
@@ -73,10 +73,10 @@ defmodule Calculator do
   def init(_), do: {:ok, 0}
 
   def handle_cast({:inc, x}, state), do: {:noreply, state + x}
-  def handle_cast({:dec, x}, state), do: {:noreply, state + x}
+  def handle_cast({:dec, x}, state), do: {:noreply, state - x}
   def handle_cast(:stop, state), do: {:stop, :normal, state}
 
-  def handle_call({:inc, x}, _, state), do: {:reply, state, state}
+  def handle_call(:get, _, state), do: {:reply, state, state}
 end
 ```
 
