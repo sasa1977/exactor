@@ -1,3 +1,6 @@
+# v2.0.1
+- Fixed the docs link in `mix.exs`
+
 # v2.0.0
 
 ## New features

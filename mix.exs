@@ -1,7 +1,7 @@
 defmodule ExActor.Mixfile do
   use Mix.Project
 
-  @version "2.0.0"
+  @version "2.0.1"
 
   def project do
     [
@@ -15,7 +15,7 @@ defmodule ExActor.Mixfile do
         licenses: ["MIT"],
         links: %{
           "Github" => "https://github.com/sasa1977/exactor",
-          "Docs" => "http://sasa1977.github.io/exactor/"
+          "Docs" => "http://hexdocs.pm/exactor"
         }
       ],
       description: "Simplified creation of GenServer based processes in Elixir.",
