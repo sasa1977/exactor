@@ -7,6 +7,10 @@ defmodule ClusterTest do
     defstart start, do: initial_state(nil)
     defmulticall sum(x, y), do: reply(x + y)
 
+    defmulticall timeout1, timeout: 10, do: (:timer.sleep(100); reply(:ok))
+    defmulticall timeout2, timeout: foo, do: (:timer.sleep(100); reply(:ok))
+    defmulticall timeout3, timeout: foo \\ 10, do: (:timer.sleep(100); reply(:ok))
+
     def diff(x, y), do: do_diff(x, y)
     defmulticallp do_diff(x, y), do: reply(x - y)
 
@@ -25,6 +29,14 @@ defmodule ClusterTest do
     assert ClusterServer.sum([], 3, 2) == {[], []}
     assert catch_error(ClusterServer.do_diff(3, 2)) == :undef
     assert ClusterServer.diff(3, 2) == {[{:"nonode@nohost", 1}], []}
+
+    assert ClusterServer.timeout1 == {[], [node]}
+    assert ClusterServer.timeout1 == {[], [node]}
+    assert ClusterServer.timeout2(10) == {[], [node]}
+    assert ClusterServer.timeout2(2000) == {[{node, :ok}], []}
+    assert ClusterServer.timeout3 == {[], [node]}
+    assert ClusterServer.timeout3([node], 10) == {[], [node]}
+    assert ClusterServer.timeout3([node], 2000) == {[{node, :ok}], []}
 
     assert ClusterServer.set(4) == :abcast
     assert ClusterServer.get == 4

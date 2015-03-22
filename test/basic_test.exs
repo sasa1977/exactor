@@ -17,7 +17,9 @@ defmodule BasicTest do
     defcast pm_set, state: 2, do: new_state(:two)
     defcast pm_set, state: 3, do: new_state(:three)
 
-    defcall timeout, timeout: 10, do: (:timer.sleep(100); noreply)
+    defcall timeout1, timeout: 10, do: (:timer.sleep(100); reply(:ok))
+    defcall timeout2, timeout: foo, do: (:timer.sleep(100); reply(:ok))
+    defcall timeout3, timeout: foo \\ 10, do: (:timer.sleep(100); reply(:ok))
 
     defhandlecall unexported, do: reply(:unexported)
     def my_unexported(server), do: GenServer.call(server, :unexported)
@@ -79,7 +81,12 @@ defmodule BasicTest do
     assert TestServer.get(pid) == :private
     assert catch_error(TestServer.private_cast(pid)) == :undef
 
-    {:timeout, _} =  catch_exit(TestServer.timeout(pid))
+    {:timeout, _} =  catch_exit(TestServer.timeout1(pid))
+    {:timeout, _} =  catch_exit(TestServer.timeout2(pid, 10))
+    assert :ok == TestServer.timeout2(pid, 2000)
+    {:timeout, _} =  catch_exit(TestServer.timeout3(pid))
+    {:timeout, _} =  catch_exit(TestServer.timeout3(pid, 10))
+    assert :ok == TestServer.timeout3(pid, 2000)
 
     assert catch_error(TestServer.unexported(pid)) == :undef
     assert TestServer.my_unexported(pid) == :unexported

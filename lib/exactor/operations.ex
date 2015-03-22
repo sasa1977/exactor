@@ -299,6 +299,12 @@ defmodule ExActor.Operations do
       # timeout option
       defcall long_call, state: state, timeout: :timer.seconds(10), do: ...
 
+      # parameterizable timeout
+      # This will include the timeout argument at the end of the interface function
+      # arguments, so the caller may specify the timeout at runtime. Default value
+      # via `\\\\` can also be provided.
+      defcall long_call, timeout: some_variable, do: ...
+
       # omitting interface fun
       defcall operation, export: false, do: ...
 
@@ -488,13 +494,17 @@ defmodule ExActor.Operations do
   defp server_fun(:multicall), do: :multi_call
   defp server_fun(:abcast), do: :abcast
 
-  defp interface_args(passthrough_args, options) do
-    case options[:export] do
-      nil -> [quote(do: server) | passthrough_args]
-      true -> [quote(do: server) | passthrough_args]
-      _registered -> passthrough_args
-    end
+  defp interface_args(args, options) do
+    server_match(options[:export]) ++ args ++ timeout_match(options[:timeout])
   end
+
+  defp server_match(export) when export == nil or export == true, do: [quote(do: server)]
+  defp server_match(_), do: []
+
+  defp timeout_match(nil), do: []
+  defp timeout_match(:infinity), do: []
+  defp timeout_match(timeout) when is_integer(timeout), do: []
+  defp timeout_match(pattern), do: [pattern]
 
   defp gen_server_args(options, type, msg) do
     [server_ref(options, type), msg] ++ timeout_arg(options, type)
@@ -518,13 +528,17 @@ defmodule ExActor.Operations do
     end
   end
 
-  defp timeout_arg(options, type) do
-    case {type, options[:timeout]} do
-      {:defcall, timeout} when timeout != nil ->
+  defp timeout_arg(options, type) when type in [:defcall, :multicall] do
+    case options[:timeout] do
+      {:\\, _, [var, _default]} ->
+        [var]
+      timeout when timeout != nil ->
         [timeout]
       _ -> []
     end
   end
+
+  defp timeout_arg(_, _), do: []
 
 
   @doc false
@@ -606,7 +620,8 @@ defmodule ExActor.Operations do
       MyServer.my_request(:local_alias, 2, 3)
       MyServer.my_request(nodes, :local_alias, 2, 3)
 
-  Request format is the same as in `defcall/3`
+  Request format is the same as in `defcall/3`. Timeout option works just like
+  with `defcall/3`.
   """
   defmacro defmulticall(req_def, options \\ [], body \\ []) do
     do_defmulticall(req_def, options ++ body)
