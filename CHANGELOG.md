@@ -1,3 +1,6 @@
+# v2.1.0
+- Added parameterizable timeout in calls (see docs for defcall)
+
 # v2.0.1
 - Fixed the docs link in `mix.exs`
 
