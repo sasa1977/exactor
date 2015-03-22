@@ -1,5 +1,5 @@
 # v2.1.0
-- Added parameterizable timeout in calls (see docs for defcall)
+- Added parameterizable timeout in calls (see [docs](http://hexdocs.pm/exactor/2.1.0/ExActor.Operations.html#defcall/3) for defcall)
 
 # v2.0.1
 - Fixed the docs link in `mix.exs`
