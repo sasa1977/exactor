@@ -29,6 +29,8 @@ defmodule ExActor.Strict do
     quote do
       use ExActor.Behaviour.Strict
 
+      @generated_funs HashSet.new
+
       import ExActor.Operations
       import ExActor.Responders
 

@@ -20,6 +20,8 @@ defmodule ExActor.GenServer do
     quote do
       use GenServer
 
+      @generated_funs HashSet.new
+
       import ExActor.Operations
       import ExActor.Responders
 

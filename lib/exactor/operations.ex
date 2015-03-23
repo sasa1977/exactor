@@ -57,8 +57,8 @@ defmodule ExActor.Operations do
   Other notes:
 
   - If the `export` option is set while using `ExActor`, it will be honored in starters.
-  - You can use patterns in arguments. Pattern matching is done on `init/1`.
-    There will be just one interface function for the given arity.
+  - You can use patterns in arguments. Pattern matching is performed in the interface function.
+    For each specified clause, there will be one corresponding interface function clause.
   - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
 
   Request format (arg passed to `init/1`):
@@ -316,7 +316,7 @@ defmodule ExActor.Operations do
       defcall a(_), do: ...
 
       # default args
-      defcall a(x \\ nil), do: ...
+      defcall a(x \\\\ nil), do: ...
 
       # Body-less clause - generates interface function which calls
       # GenServer.call but doesn't generate the handler. You can use
@@ -391,11 +391,43 @@ defmodule ExActor.Operations do
     {req_name, interface_matches, payload, _} = req_args(req_def)
 
     quote do
-      unquote(define_interface(type, req_name, interface_matches, payload, options))
+      req_id = unquote(Macro.escape(req_id(req_def, options)))
+      unless HashSet.member?(@generated_funs, req_id) do
+        unquote(define_interface(type, req_name, interface_matches, payload, options))
+        @generated_funs HashSet.put(@generated_funs, req_id)
+      end
+
       unquote(if options[:do] do
         implement_request(type, req_def, options)
       end)
     end
+  end
+
+  defp req_id({req_name, _, args}, options) do
+    {
+      req_name,
+      Enum.map(
+        strip_context(args || []),
+        fn
+          {var_name, _, scope} when is_atom(var_name) and is_atom(scope) -> :matchall
+          other -> other
+        end
+      ),
+      strip_context(options[:when])
+    }
+  end
+
+  defp req_id(req_name, options) when is_atom(req_name) do
+    req_id({req_name, [], []}, options)
+  end
+
+  defp strip_context(ast) do
+    Macro.prewalk(ast,
+      fn
+        {a, _context, b} -> {a, [], b}
+        other -> other
+      end
+    )
   end
 
   defp generate_request_def(type, req_def, options) do
