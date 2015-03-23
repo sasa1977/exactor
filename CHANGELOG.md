@@ -1,3 +1,8 @@
+# v2.1.1
+- Relaxed Elixir version dependency to `~> 1.0`
+- Bugfix: Proper lineno generation in client code.
+- Improve pattern matching handling (see [docs](http://hexdocs.pm/exactor/2.1.1/ExActor.Operations.html#defcall/3) for details)
+
 # v2.1.0
 - Added parameterizable timeout in calls (see [docs](http://hexdocs.pm/exactor/2.1.0/ExActor.Operations.html#defcall/3) for defcall)
 
