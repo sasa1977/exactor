@@ -15,7 +15,8 @@ defmodule ExActor.Mixfile do
         licenses: ["MIT"],
         links: %{
           "Github" => "https://github.com/sasa1977/exactor",
-          "Docs" => "http://hexdocs.pm/exactor"
+          "Docs" => "http://hexdocs.pm/exactor",
+          "Changelog" => "https://github.com/sasa1977/exactor/blob/#{@version}/CHANGELOG.md#v#{String.replace(@version, ".", "")}"
         }
       ],
       description: "Simplified creation of GenServer based processes in Elixir.",
