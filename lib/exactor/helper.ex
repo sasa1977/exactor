@@ -7,7 +7,9 @@ defmodule ExActor.Helper do
       aliases: env.aliases,
       requires: env.requires,
       functions: env.functions,
-      macros: env.macros
+      macros: env.macros,
+      file: env.file,
+      line: env.line
     )
   end
 

@@ -17,6 +17,12 @@ defmodule BasicTest do
     defcast pm_set, state: 2, do: new_state(:two)
     defcast pm_set, state: 3, do: new_state(:three)
 
+    defcast pm_set(1), do: new_state(:one)
+    defcast pm_set(x), when: x == 2, do: new_state(:two)
+    defcast pm_set(_), state: :two, do: new_state(:three)
+    defcast pm_set(_), state: :three, do: new_state(:four)
+    defcast pm_set(x), do: new_state(x)
+
     defcall timeout1, timeout: 10, do: (:timer.sleep(100); reply(:ok))
     defcall timeout2, timeout: foo, do: (:timer.sleep(100); reply(:ok))
     defcall timeout3, timeout: foo \\ 10, do: (:timer.sleep(100); reply(:ok))
@@ -73,6 +79,21 @@ defmodule BasicTest do
 
     TestServer.pm_set(pid)
     assert TestServer.get(pid) == :two
+
+    TestServer.pm_set(pid, 1)
+    assert TestServer.get(pid) == :one
+
+    TestServer.pm_set(pid, 2)
+    assert TestServer.get(pid) == :two
+
+    TestServer.pm_set(pid, 3)
+    assert TestServer.get(pid) == :three
+
+    TestServer.pm_set(pid, 4)
+    assert TestServer.get(pid) == :four
+
+    TestServer.pm_set(pid, 5)
+    assert TestServer.get(pid) == 5
 
     assert TestServer.callp_interface(pid) == :private_call
     assert catch_error(TestServer.private_call(pid)) == :undef

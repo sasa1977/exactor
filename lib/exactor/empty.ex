@@ -22,6 +22,8 @@ defmodule ExActor.Empty do
     quote do
       @behaviour :gen_server
 
+      @generated_funs HashSet.new
+
       import ExActor.Operations
       import ExActor.Responders
 
