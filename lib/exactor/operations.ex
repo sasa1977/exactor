@@ -611,7 +611,7 @@ defmodule ExActor.Operations do
   @doc false
   # Implements the handler function (handle_call, handle_cast, handle_timeout)
   def implement_handler(type, options, msg) do
-    state_arg = get_state_identifier(options[:state])
+    state_arg = get_state_identifier(Keyword.fetch(options, :state))
     {handler_name, handler_args} = handler_sig(type, options, msg, state_arg)
 
     quote bind_quoted: [
@@ -632,9 +632,9 @@ defmodule ExActor.Operations do
     end
   end
 
-  defp get_state_identifier(nil), do: get_state_identifier(quote(do: _))
-  defp get_state_identifier(any),
-    do: quote(do: unquote(any) = unquote(ExActor.Helper.state_var))
+  defp get_state_identifier({:ok, match}),
+    do: quote(do: unquote(match) = unquote(ExActor.Helper.state_var))
+  defp get_state_identifier(:error), do: get_state_identifier({:ok, quote(do: _)})
 
   defp handler_sig(:defcall, options, msg, state_arg),
     do: {:handle_call, [msg, options[:from] || quote(do: _from), state_arg]}
