@@ -267,7 +267,7 @@ Hibernation:
 defstart ... do
   # Instructs `ExActor` to include `:hibernate` in all responses made via responder
   # macros, such as `new_state` or `noreply`.
-  hibernate(:timer.seconds(10))
+  hibernate
 end
 ```
 
