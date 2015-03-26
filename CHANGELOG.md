@@ -1,3 +1,6 @@
+# v2.1.2
+- Bugfix: pattern matching on `nil` state didn't work properly
+
 # v2.1.1
 - Relaxed Elixir version dependency to `~> 1.0`
 - Bugfix: Proper lineno generation in client code.

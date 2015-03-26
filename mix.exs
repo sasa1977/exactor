@@ -1,7 +1,7 @@
 defmodule ExActor.Mixfile do
   use Mix.Project
 
-  @version "2.1.1"
+  @version "2.1.2"
 
   def project do
     [
@@ -20,8 +20,9 @@ defmodule ExActor.Mixfile do
         }
       ],
       description: "Simplified creation of GenServer based processes in Elixir.",
+      name: "ExActor",
       docs: [
-        readme: true,
+        readme: "README.md",
         main: "ExActor.Operations",
         source_url: "https://github.com/sasa1977/exactor/",
         source_ref: @version
@@ -33,7 +34,7 @@ defmodule ExActor.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, "~> 0.6.0", only: :docs}
+      {:ex_doc, "~> 0.7.0", only: :docs}
     ]
   end
 end

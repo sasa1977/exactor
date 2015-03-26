@@ -14,7 +14,7 @@ defmodule BasicTest do
     defcast set(x), do: new_state(x)
     defcall get, state: state, do: reply(state)
 
-    defcast pm_set, state: 2, do: new_state(:two)
+    defcast pm_set, state: nil, do: new_state(:two)
     defcast pm_set, state: 3, do: new_state(:three)
 
     defcast pm_set(1), do: new_state(:one)
@@ -77,6 +77,7 @@ defmodule BasicTest do
     TestServer.set(pid, 2)
     assert TestServer.get(pid) == 2
 
+    TestServer.set(pid, nil)
     TestServer.pm_set(pid)
     assert TestServer.get(pid) == :two
 
