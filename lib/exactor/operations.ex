@@ -42,7 +42,7 @@ defmodule ExActor.Operations do
         # runs for both cases
       end
 
-  Keep in mind that generated `info/1` matches on the number of arguments, so this won't work:
+  Keep in mind that generated `init/1` matches on the number of arguments, so this won't work:
 
       defstart start_link(x)
       defstart start_link(x, y) do
@@ -50,14 +50,13 @@ defmodule ExActor.Operations do
       end
 
   If you want to handle various versions, you can just define start heads without the body,
-  and then use `defhandleinfo/2` or just implement `handle_info/1`.
+  and then use `definit/2` or just implement `init/1`.
 
   ## Other notes
 
   - If the `export` option is set while using `ExActor`, it will be honored in starters.
-  - You can use patterns in arguments. Pattern matching is performed in the interface function.
-    For each specified clause, there will be one corresponding interface function clause.
-  - You can provide additional guard via `:when` option. The guard applies to the `init/1`.
+  - For each specified clause, there will be one corresponding interface function clause.
+  - You can provide additional guard via `:when` option. For more info on guards, see `defcall/3`.
 
   ### Request format (arg passed to `init/1`)
 
@@ -105,13 +104,27 @@ defmodule ExActor.Operations do
         ExActor.Operations.prepare_start_interface(fun, interface_matches, options, @exactor_global_options)
 
       unless private do
-        def unquote(fun)(unquote_splicing(interface_matches)) do
-          GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+        case ExActor.Operations.guard(options, :interface) do
+          nil ->
+            def unquote(fun)(unquote_splicing(interface_matches)) do
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+            end
+          guard ->
+            def unquote(fun)(unquote_splicing(interface_matches)) when unquote(guard) do
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+            end
         end
       else
-        defp unquote(fun)(unquote_splicing(interface_matches)) do
-          GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
-        end
+        case ExActor.Operations.guard(options, :interface) do
+          nil ->
+            defp unquote(fun)(unquote_splicing(interface_matches)) do
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+            end
+          guard ->
+            defp unquote(fun)(unquote_splicing(interface_matches)) when unquote(guard) do
+              GenServer.unquote(gen_server_fun)(__MODULE__, unquote(payload), unquote(gen_server_opts))
+            end
+          end
       end
 
       if options[:do] do
@@ -218,13 +231,11 @@ defmodule ExActor.Operations do
 
   defp do_definit(opts) do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
-      if (opts[:when]) do
-        def init(unquote_splicing([opts[:arg]]))
-          when unquote(opts[:when]),
-          do: unquote(opts[:do])
-      else
-        def init(unquote_splicing([opts[:arg]])),
-          do: unquote(opts[:do])
+      case ExActor.Operations.guard(opts, :handler) do
+        nil ->
+          def init(unquote_splicing([opts[:arg]])), do: unquote(opts[:do])
+        guard ->
+          def init(unquote_splicing([opts[:arg]])) when unquote(guard), do: unquote(opts[:do])
       end
     end
   end
@@ -292,6 +303,7 @@ defmodule ExActor.Operations do
       defcall a(1), do: ...
       defcall a(2), do: ...
       defcall a(x), when: x > 1, do: ...
+      defcall a(x), when: [interface: x > 1, handler: x < state], do: ...
       defcall a(x), state: 1, do: ...
       defcall a(_), state: state, do: ...
 
@@ -310,8 +322,10 @@ defmodule ExActor.Operations do
   If you're writing multi-clauses, the following rules apply:
 
   - Arguments are pattern-matched in interface and in handler function.
-  - The `when:` clause applies only to the interface function.
   - The `state` argument is pattern-matched in the handler function.
+  - The `when:` clause by default applies to both interface and handler functions.
+    You can however specify separate guards with `when: [interface: ..., handler: ...]`.
+    It's not necessary to provide both options to `when`.
 
   `ExActor` will try to be smart to some extent, and defer from generating the
   interface clause if it's not needed.
@@ -360,13 +374,6 @@ defmodule ExActor.Operations do
   perform complex combinations of pattern matches on arguments and the state, it's
   probably better to use this technique as it gives you more control over what is
   matched at which point.
-
-  Also, this approach allows you to use the state in the `when` option (guard):
-
-      defcall a(x)
-
-      defhandlecall a(x), state: state, when: state > 0, do: ...
-      defhandlecall a(x), state: state, do: ...
   """
   defmacro defcall(req_def, options \\ [], body \\ []) do
     generate_funs(:defcall, req_def, options ++ body)
@@ -422,6 +429,15 @@ defmodule ExActor.Operations do
   end
 
   @doc false
+  def guard(options, type) do
+    case options[:when] do
+      nil -> nil
+      list when is_list(list) -> list[type]
+      other -> other
+    end
+  end
+
+  @doc false
   def def_request(type, req_def, options) do
     {req_name, interface_matches, payload, _} = req_args(req_def)
 
@@ -448,7 +464,7 @@ defmodule ExActor.Operations do
           other -> other
         end
       ),
-      strip_context(options[:when])
+      strip_context(guard(options, :interface))
     }
   end
 
@@ -515,7 +531,7 @@ defmodule ExActor.Operations do
       server_fun: server_fun(type),
       interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
       gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true),
-      guard: Macro.escape(options[:when], unquote: true)
+      guard: Macro.escape(guard(options, :interface), unquote: true)
     ] do
       {interface_args, gen_server_args} =
         unless type in [:multicall, :abcast] do
@@ -618,7 +634,7 @@ defmodule ExActor.Operations do
       type: type,
       handler_name: handler_name,
       handler_args: Macro.escape(handler_args, unquote: true),
-      guard: Macro.escape(options[:when], unquote: true),
+      guard: Macro.escape(guard(options, :handler), unquote: true),
       body: Macro.escape(options[:do], unquote: true)
     ] do
       if guard do
