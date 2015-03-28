@@ -1,5 +1,8 @@
 # ExActor
 
+[![Hex.pm](https://img.shields.io/hexpm/v/exactor.svg?style=flat-square)](https://hex.pm/packages/exactor)
+[![Hex.pm](https://img.shields.io/hexpm/dt/exactor.svg?style=flat-square)](https://hex.pm/packages/exactor)
+
 Simplifies implementation of `GenServer` based processes in Elixir.
 
 `ExActor` helps removing the boilerplate that typically occurs when using `GenServer` behaviour. In particular, `ExActor` can be useful in following situations:
