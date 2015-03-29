@@ -2,7 +2,113 @@ defmodule ExActor.Operations do
   @moduledoc """
   Macros that can be used for simpler definition of `GenServer` operations
   such as casts or calls.
+
+  For example:
+
+      defcall request(x, y), state: state do
+        set_and_reply(state + x + y, :ok)
+      end
+
+  will generate two functions:
+
+      def request(server, x, y) do
+        GenServer.call(server, {:request, x, y})
+      end
+
+      def handle_call({:request, x, y}, _, state) do
+        {:reply, :ok, state + x + y}
+      end
+
+  There are various helper macros available for specifying responses. For more details
+  see `ExActor.Responders`.
+
+  ## Request format (passed to `handle_call/3` and `handle_cast/2`)
+
+  - no arguments -> `:my_request`
+  - one arguments -> `{:my_request, x}`
+  - more arguments -> `{:my_request, x, y, ...}`
+
+  ## Common options
+
+  - `:when` - specifies guards (see __Pattern matching__ below for details)
+  - `:export` - applicable in `defcall/3` and `defcast/3`. If provided, specifies
+  the server alias. In this case, interface functions will not accept the server
+  as the first argument, and will insted use the provided alias. The alias
+  can be an atom (for locally registered processes), `{:global, global_alias}` or
+  a via tuple (`{:via, registration_module, alias}`).
+
+  ## Pattern matching
+
+      defcall a(1), do: ...
+      defcall a(x), when: x > 1, do: ...
+      defcall a(x), when: [interface: x > 1, handler: x < state], do: ...
+      defcall a(x), state: 1, do: ...
+      defcall a(_), state: state, do: ...
+
+  ### Details
+
+  `defcall` and other similar constructs usually define a clause for two
+  functions: the interface function and the handler function. If you're writing
+  multi-clauses, the following rules apply:
+
+  - Arguments are pattern-matched in the interface and in the handler function.
+  - The `:state` pattern is used in the handler function.
+  - The `:when` option by default applies to both, the interface and the handler function.
+    You can however specify separate guards with `when: [interface: ..., handler: ...]`.
+    It's not necessary to provide both options to `when`.
+
+  `ExActor` will try to be smart to some extent, and defer from generating the
+  interface clause if it's not needed.
+
+  For example:
+
+      defcall foo(_, _), state: nil, do: ...
+      defcall foo(x, y), state: state, do: ...
+
+  will generate only a single interface function that always matches its arguments
+  and sends them to the server process. There will be of course two `handle_call`
+  clauses.
+
+  The same holds for more elaborate pattern-matches:
+
+      defcall foo(1, 2), ...
+      defcall foo(x, y), when: x > y, ...
+      defcall foo(_, _), state: nil, do: ...
+      defcall foo(x, y), state: state, do: ...
+
+  The example above will generate three interface clauses:
+
+  - `def foo(1, 2)`
+  - `def foo(x, y) when x > y`
+  - `def foo(x, y)`
+
+  Of course, there will be four `handle_call` clauses, each with the corresponding
+  body provided via `do` option.
+
+  ### Separating interface and handler clauses
+
+  If you want to be more explicit about pattern matching, you can use a body-less
+  construct:
+
+      defcall foo(x, y)
+
+  This will generate only the interface clause that issues a call (or a cast in
+  the case of `defcast`) to the server process.
+
+  You can freely use multiple `defcall` body-less clauses if you need to pattern
+  match arguments.
+
+  To generate handler clauses you can use `defhandlecall/3`:
+
+      defhandlecall foo(_, _), state: nil, do: ...
+      defhandlecall foo(x, y), state: state, do: ...
+
+  This approach requires some more typing, but it's more explicit. If you need to
+  perform a complex combination of pattern matches on arguments and the state, it's
+  probably better to use this technique as it gives you more control over what is
+  matched at which point.
   """
+
 
   @doc """
   Defines the starter function and initializer body.
@@ -54,9 +160,9 @@ defmodule ExActor.Operations do
 
   ## Other notes
 
-  - If the `export` option is set while using `ExActor`, it will be honored in starters.
+  - If the `export` option is set while using `ExActor`, it will be used in starters, and
+  the server process will be registered under a given alias.
   - For each specified clause, there will be one corresponding interface function clause.
-  - You can provide additional guard via `:when` option. For more info on guards, see `defcall/3`.
 
   ### Request format (arg passed to `init/1`)
 
@@ -242,8 +348,7 @@ defmodule ExActor.Operations do
 
 
   @doc """
-  Defines the cast callback clause and the corresponding interface fun. See
-  `defcall/3` for more details.
+  Defines the cast callback clause and the corresponding interface fun.
   """
   defmacro defcast(req_def, options \\ [], body \\ []) do
     generate_funs(:defcast, req_def, options ++ body)
@@ -271,15 +376,11 @@ defmodule ExActor.Operations do
   @doc """
   Defines the call callback clause and the corresponding interface fun.
 
-      defcall operation, do: reply(response)
-      defcall get, state: state, do: reply(state)
-      defcall inc(x \\\\ 1), state: state, do: set_and_reply(state + x, response)
+  Call-specific options:
 
-  ## Request format (passed to `handle_call/3`)
-
-  - no arguments -> `:my_request`
-  - one arguments -> `{:my_request, x}`
-  - more arguments -> `{:my_request, x, y, ...}`
+    - `:timeout` - specifies the timeout used in `GenServer.call` (see below for
+    details)
+    - `:from` - matches the caller in `handle_call`.
 
   ## Timeout
 
@@ -297,83 +398,6 @@ defmodule ExActor.Operations do
   won't have the access to this variable in your body though, since the body
   specifies the handler function. Default timeout value can also be provided via
   standard `\\\\` syntax.
-
-  ## Pattern matching
-
-      defcall a(1), do: ...
-      defcall a(2), do: ...
-      defcall a(x), when: x > 1, do: ...
-      defcall a(x), when: [interface: x > 1, handler: x < state], do: ...
-      defcall a(x), state: 1, do: ...
-      defcall a(_), state: state, do: ...
-
-  ### Details
-
-  A single `defcall` (or similar) construct usually defines a clause for two
-  functions: the interface function and the handler function. For example:
-
-      defcall foo(x, y), state: state, do: ...
-
-  will generate:
-
-      def foo(pid, x, y), do: ...
-      def handle_call({:foo, x, y}, _, state), do: ...
-
-  If you're writing multi-clauses, the following rules apply:
-
-  - Arguments are pattern-matched in interface and in handler function.
-  - The `state` argument is pattern-matched in the handler function.
-  - The `when:` clause by default applies to both interface and handler functions.
-    You can however specify separate guards with `when: [interface: ..., handler: ...]`.
-    It's not necessary to provide both options to `when`.
-
-  `ExActor` will try to be smart to some extent, and defer from generating the
-  interface clause if it's not needed.
-
-  For example:
-
-      defcall foo(_, _), state: nil, do: ...
-      defcall foo(x, y), state: state, do: ...
-
-  will generate only a single interface function that always matches its arguments
-  and sends them to the server process. There will be of course two `handle_call`
-  clauses.
-
-  You can freely mix this with argument pattern matches:
-
-      defcall foo(1, 2), ...
-      defcall foo(x, y), when: x > y, ...
-      defcall foo(_, _), state: nil, do: ...
-      defcall foo(x, y), state: state, do: ...
-
-  The example above will generate three interface clauses:
-
-  - `def foo(1, 2)`
-  - `def foo(x, y) when x > y`
-  - `def foo(x, y)`
-
-  Of course, there will be four `handle_call` clauses, each with the corresponding
-  body provided via `do` option.
-
-  ### Separating interface and handler clauses
-
-  If you want to be more explicit about pattern matching, you can use a body-less
-  construct:
-
-      defcall foo(x, y)
-
-  You can freely use multiple `defcall` body-less clauses if you need to pattern
-  match arguments.
-
-  To generate handler clauses you can use `defhandlecall/3`:
-
-      defhandlecall foo(_, _), state: nil, do: ...
-      defhandlecall foo(x, y), state: state, do: ...
-
-  This approach requires some more typing, but it's more explicit. If you need to
-  perform complex combinations of pattern matches on arguments and the state, it's
-  probably better to use this technique as it gives you more control over what is
-  matched at which point.
   """
   defmacro defcall(req_def, options \\ [], body \\ []) do
     generate_funs(:defcall, req_def, options ++ body)
@@ -743,8 +767,6 @@ defmodule ExActor.Operations do
       # The process is not locally registered via `:export` option
       MyServer.my_request(:local_alias, 2, 3)
       MyServer.my_request(nodes, :local_alias, 2, 3)
-
-  Request format is the same as in `defcall/3`
   """
   defmacro defabcast(req_def, options \\ [], body \\ []) do
     do_defabcast(req_def, options ++ body)
