@@ -31,7 +31,7 @@ defmodule BasicTest do
     def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
-    defcast leave_state, do: (4; noreply)
+    defcast leave_state, do: noreply
     defcall full_reply, do: set_and_reply(6, 5)
 
     def callp_interface(server), do: private_call(server)
