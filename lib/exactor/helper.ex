@@ -20,6 +20,6 @@ defmodule ExActor.Helper do
   end
 
   def state_var do
-    Macro.var(:___state_var, ExActor)
+    Macro.var(:state_var, ExActor)
   end
 end

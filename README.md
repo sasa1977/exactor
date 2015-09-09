@@ -1,5 +1,8 @@
 # ExActor
 
+[![Hex.pm](https://img.shields.io/hexpm/v/exactor.svg?style=flat-square)](https://hex.pm/packages/exactor)
+[![Hex.pm](https://img.shields.io/hexpm/dt/exactor.svg?style=flat-square)](https://hex.pm/packages/exactor)
+
 Simplifies implementation of `GenServer` based processes in Elixir.
 
 `ExActor` helps removing the boilerplate that typically occurs when using `GenServer` behaviour. In particular, `ExActor` can be useful in following situations:
@@ -25,7 +28,7 @@ The stable package is available on [hex](https://hex.pm/packages/exactor).
 Be sure to include a dependency in your `mix.exs`:
 
 ```elixir
-deps: [{:exactor, "~> 2.1.0"}, ...]
+deps: [{:exactor, "~> 2.2.0"}, ...]
 ```
 
 `ExActor` is a compile-time dependency only. No need to add it into the list of dependent applications. All code transformations are performed at compile time.

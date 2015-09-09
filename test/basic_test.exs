@@ -20,7 +20,7 @@ defmodule BasicTest do
     defcast pm_set(1), do: new_state(:one)
     defcast pm_set(x), when: x == 2, do: new_state(:two)
     defcast pm_set(_), state: :two, do: new_state(:three)
-    defcast pm_set(_), state: :three, do: new_state(:four)
+    defcast pm_set(_), state: state, when: [handler: state == :three], do: new_state(:four)
     defcast pm_set(x), do: new_state(x)
 
     defcall timeout1, timeout: 10, do: (:timer.sleep(100); reply(:ok))
@@ -31,7 +31,7 @@ defmodule BasicTest do
     def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
-    defcast leave_state, do: (4; noreply)
+    defcast leave_state, do: noreply
     defcall full_reply, do: set_and_reply(6, 5)
 
     def callp_interface(server), do: private_call(server)
