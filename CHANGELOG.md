@@ -1,3 +1,7 @@
+# v2.2.0
+- Support interface & handler specific guards (see [docs](http://hexdocs.pm/exactor/2.2.0/ExActor.Operations.html) for details)
+- Remove warnings on Elixir 1.1
+
 # v2.1.2
 - Bugfix: pattern matching on `nil` state didn't work properly
 
