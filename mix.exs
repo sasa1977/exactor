@@ -22,7 +22,7 @@ defmodule ExActor.Mixfile do
       description: "Simplified creation of GenServer based processes in Elixir.",
       name: "ExActor",
       docs: [
-        readme: "README.md",
+        extras: ["README.md"],
         main: "ExActor.Operations",
         source_url: "https://github.com/sasa1977/exactor/",
         source_ref: @version
