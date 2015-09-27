@@ -34,7 +34,7 @@ defmodule ExActor.Mixfile do
 
   defp deps do
     [
-      {:ex_doc, "~> 0.7.0", only: :docs}
+      {:ex_doc, "~> 0.10.0", only: :docs}
     ]
   end
 end
