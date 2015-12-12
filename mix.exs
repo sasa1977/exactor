@@ -9,6 +9,8 @@ defmodule ExActor.Mixfile do
       version: @version,
       elixir: "~> 1.0",
       app: :exactor,
+      build_embedded: Mix.env == :prod,
+      start_permanent: Mix.env == :prod,
       deps: deps,
       package: [
         contributors: ["Saša Jurić"],
