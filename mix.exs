@@ -13,7 +13,7 @@ defmodule ExActor.Mixfile do
       start_permanent: Mix.env == :prod,
       deps: deps,
       package: [
-        contributors: ["Saša Jurić"],
+        maintainers: ["Saša Jurić"],
         licenses: ["MIT"],
         links: %{
           "Github" => "https://github.com/sasa1977/exactor",
