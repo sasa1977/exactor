@@ -131,7 +131,7 @@ defhandleinfo :stop, do: stop(normal)
 defhandleinfo _, do: noreply
 ```
 
-See [here](http://hexdocs.pm/exactor/1.0.0/ExActor.Responders.html) for detailed list.
+See [here](https://hexdocs.pm/exactor/ExActor.Responders.html#summary) for detailed list.
 
 ## Simplified initialization
 
