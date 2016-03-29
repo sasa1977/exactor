@@ -164,6 +164,14 @@ end
 
 # You can pass `name: :foo` due to `gen_server_opts: :runtime` option in the starter
 Calculator.start_link(x, name: :foo)
+
+# Or in the supervisor specification:
+Supervisor.start_link(
+  [
+    worker(Calculator, [x, [name: :foo]]),
+    # ...
+  ]
+)
 ```
 
 ## Cluster support
