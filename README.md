@@ -166,6 +166,18 @@ end
 Calculator.start_link(x, name: :foo)
 ```
 
+This will also allow you to pass in the actor process name when instantiated as a worker like so:
+
+```elixir
+# Or in the supervisor specification:
+Supervisor.start_link(
+  [
+    worker(Calculator, [x, [name: :foo]]),
+    # ...
+  ]
+)
+```
+
 ## Cluster support
 
 ```elixir
