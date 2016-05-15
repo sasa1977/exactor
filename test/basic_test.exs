@@ -53,6 +53,10 @@ defmodule BasicTest do
       reply(:ok)
     end
 
+    defcall test_composite_match(%{} = arg) do
+      reply(arg)
+    end
+
     defhandleinfo {:msg1, from} do
       send(from, :reply_msg1)
       noreply
@@ -244,17 +248,17 @@ defmodule BasicTest do
   defmodule TestDefaultsServer do
     use ExActor.GenServer
 
-    defstart start(a, b \\ 0, c), do: initial_state(a + b + c)
-    defcall get(x \\ nil), state: state, do: reply(x || state)
-    defcast set(x \\ 0), do: new_state(x)
+    defstart start(a, b \\ 0, c, _ = d, e = _, _ = _ = f), do: initial_state(a + b + c + d + e + f)
+    defcall get(_ = x \\ nil), state: state, do: reply(x || state)
+    defcast set(x = _ \\ 0), do: new_state(x)
   end
 
   test "defaults" do
-    {:ok, pid} = TestDefaultsServer.start(1, 2, 3)
-    assert TestDefaultsServer.get(pid) == 6
+    {:ok, pid} = TestDefaultsServer.start(1, 2, 3, 4, 5, 6)
+    assert TestDefaultsServer.get(pid) == 21
 
-    {:ok, pid} = TestDefaultsServer.start(1, 2)
-    assert TestDefaultsServer.get(pid) == 3
+    {:ok, pid} = TestDefaultsServer.start(1, 2, 3, 4, 5)
+    assert TestDefaultsServer.get(pid) == 15
 
     assert TestDefaultsServer.get(pid, 4) == 4
 

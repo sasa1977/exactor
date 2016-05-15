@@ -245,16 +245,7 @@ defmodule ExActor.Operations do
   @doc false
   def extract_args(args) do
     arg_names =
-      for {arg, index} <- Enum.with_index(args) do
-        case arg do
-          {:\\, _, [{arg_name, _, _} = inner_arg, _]}
-            when is_atom(arg_name) and arg_name != :=
-          ->
-            inner_arg
-          {arg_name, _, _} when is_atom(arg_name) and not (arg_name in [:_, :\\, :=]) -> arg
-          _ -> Macro.var(:"arg#{index}", __MODULE__)
-        end
-      end
+      for {arg, index} <- Enum.with_index(args), do: extract_arg(arg, index)
 
     interface_matches = for {arg, arg_name} <- Enum.zip(args, arg_names) do
       case arg do
@@ -272,6 +263,25 @@ defmodule ExActor.Operations do
     end
     {arg_names, interface_matches, args}
   end
+
+  defmacrop var_name?(arg_name) do
+    quote do
+      is_atom(unquote(arg_name)) and not (unquote(arg_name) in [:_, :\\, :=, :%{}, :{}, :<<>>])
+    end
+  end
+
+  defp extract_arg({:\\, _, [inner_arg, _]}, index),
+    do: extract_arg(inner_arg, index)
+  defp extract_arg({:=, _, [{arg_name, _, _} = arg, _]}, _index) when var_name?(arg_name),
+    do: arg
+  defp extract_arg({:=, _, [_, {arg_name, _, _} = arg]}, _index) when var_name?(arg_name),
+    do: arg
+  defp extract_arg({:=, _, [_, {:=, _, _} = submatch]}, index),
+    do: extract_arg(submatch, index)
+  defp extract_arg({arg_name, _, _} = arg, _index) when var_name?(arg_name),
+    do: arg
+  defp extract_arg(_, index),
+    do: Macro.var(:"arg#{index}", __MODULE__)
 
   @doc false
   def start_args(args) do
