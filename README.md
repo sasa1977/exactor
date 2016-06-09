@@ -70,7 +70,7 @@ defmodule Calculator do
   def stop(pid), do: GenServer.cast(pid, :stop)
 
   def inc(pid, x), do: GenServer.cast(pid, {:inc, x})
-  def dec(pid, x), do: GenServer.cast(pid, {:inc, x})
+  def dec(pid, x), do: GenServer.cast(pid, {:dec, x})
   def get(pid), do: GenServer.call(pid, :get)
 
   def init(_), do: {:ok, 0}
