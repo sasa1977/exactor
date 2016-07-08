@@ -170,7 +170,8 @@ defmodule ExActor.Operations do
   - one arguments -> `{x}`
   - more arguments -> `{x, y, ...}`
   """
-  defmacro defstart({fun, _, args}, opts \\ [], body \\ []) do
+  defmacro defstart(definition, opts \\ [], body \\ []) do
+    {fun, args} = Macro.decompose_call(definition)
     define_starter(false, fun, args, opts ++ body)
   end
 
@@ -193,7 +194,8 @@ defmodule ExActor.Operations do
         end
       end
   """
-  defmacro defstartp({fun, _, args}, options \\ [], body \\ []) do
+  defmacro defstartp(definition, options \\ [], body \\ []) do
+    {fun, args} = Macro.decompose_call(definition)
     define_starter(true, fun, args, options ++ body)
   end
 
@@ -488,7 +490,8 @@ defmodule ExActor.Operations do
     end
   end
 
-  defp req_id({req_name, _, args}, options) do
+  defp req_id({_, _, _} = definition, options) do
+    {req_name, args} = Macro.decompose_call(definition)
     {
       req_name,
       Enum.map(
@@ -554,7 +557,9 @@ defmodule ExActor.Operations do
   end
 
   defp parse_req_def(req_name) when is_atom(req_name), do: {req_name, []}
-  defp parse_req_def({req_name, _, args}), do: {req_name, args || []}
+  defp parse_req_def({_, _, _} = definition) do
+    Macro.decompose_call(definition)
+  end
 
   # Defines the interface function to call/cast
   defp define_interface(type, req_name, interface_matches, payload, options) do

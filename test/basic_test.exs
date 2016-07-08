@@ -335,4 +335,23 @@ defmodule BasicTest do
     :timer.sleep(100)
     Logger.add_backend(:console)
   end
+
+  defmodule FragmentModule do
+    defmacro __using__(_) do
+      quote do
+        defstart start_link, do: initial_state(nil)
+        defcall operation, do: reply(:ok)
+      end
+    end
+  end
+
+  defmodule ComposedModule do
+    use ExActor.Tolerant
+    use FragmentModule
+  end
+
+  test "composed module" do
+    {:ok, pid} = ComposedModule.start_link()
+    assert :ok == ComposedModule.operation(pid)
+  end
 end
