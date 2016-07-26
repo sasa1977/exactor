@@ -1,3 +1,7 @@
+# v2.2.1
+- Bugfix: support compound matches
+- Bugfix: support ExActor macros from other macros
+
 # v2.2.0
 - Support interface & handler specific guards (see [docs](http://hexdocs.pm/exactor/2.2.0/ExActor.Operations.html) for details)
 - Remove warnings on Elixir 1.1
