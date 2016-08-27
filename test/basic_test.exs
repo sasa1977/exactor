@@ -354,4 +354,23 @@ defmodule BasicTest do
     {:ok, pid} = ComposedModule.start_link()
     assert :ok == ComposedModule.operation(pid)
   end
+
+  defmodule Struct do
+    defstruct [:x, :y]
+  end
+
+  defmodule MatchTest do
+    use ExActor.Tolerant
+
+    defstart start, do: initial_state(nil)
+
+    defcall call(%Struct{} = s) do
+      reply(s)
+    end
+  end
+
+  test "matching a struct" do
+    {:ok, pid} = MatchTest.start()
+    assert MatchTest.call(pid, %Struct{x: 1, y: 2}) == %Struct{x: 1, y: 2}
+  end
 end
