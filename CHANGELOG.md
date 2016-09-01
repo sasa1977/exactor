@@ -1,3 +1,6 @@
+# v2.2.2
+- fix compund matches with structs
+
 # v2.2.1
 - Bugfix: support compound matches
 - Bugfix: support ExActor macros from other macros
