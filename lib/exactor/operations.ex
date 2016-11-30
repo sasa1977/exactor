@@ -479,9 +479,9 @@ defmodule ExActor.Operations do
 
     quote do
       req_id = unquote(Macro.escape(req_id(req_def, options)))
-      unless HashSet.member?(@generated_funs, req_id) do
+      unless MapSet.member?(@generated_funs, req_id) do
         unquote(define_interface(type, req_name, interface_matches, payload, options))
-        @generated_funs HashSet.put(@generated_funs, req_id)
+        @generated_funs MapSet.put(@generated_funs, req_id)
       end
 
       unquote(if options[:do] do

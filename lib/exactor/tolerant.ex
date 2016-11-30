@@ -24,7 +24,7 @@ defmodule ExActor.Tolerant do
     quote do
       use ExActor.Behaviour.Tolerant
 
-      @generated_funs HashSet.new
+      @generated_funs MapSet.new
 
       import ExActor.Operations
       import ExActor.Responders

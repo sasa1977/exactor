@@ -71,11 +71,19 @@ defmodule PredefinesTest do
     assert_invalid(GenServerServer,
       fn(pid) ->
         send(pid, :undefined_message)
-
-        assert match?(
-          {{:bad_call, :undefined_message}, _},
-          catch_exit(GenServer.call(pid, :undefined_message, 10))
-        )
+        {:ok, vsn} = :application.get_key(:elixir, :vsn)
+        case Version.compare(to_string(vsn), "1.4.0-rc.0") do
+          :lt ->
+            assert match?(
+              {{:bad_call, :undefined_message}, _},
+              catch_exit(GenServer.call(pid, :undefined_message, 10))
+            )
+          _ ->
+            assert match?(
+              {{%RuntimeError{}, _}, _},
+              catch_exit(GenServer.call(pid, :undefined_message, 10))
+            )
+        end
       end
     )
   end
