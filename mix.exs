@@ -11,7 +11,7 @@ defmodule ExActor.Mixfile do
       app: :exactor,
       build_embedded: Mix.env == :prod,
       start_permanent: Mix.env == :prod,
-      deps: deps,
+      deps: deps(),
       package: [
         maintainers: ["Saša Jurić"],
         licenses: ["MIT"],

@@ -29,7 +29,7 @@ defmodule ExActor.Strict do
     quote do
       use ExActor.Behaviour.Strict
 
-      @generated_funs HashSet.new
+      @generated_funs MapSet.new
 
       import ExActor.Operations
       import ExActor.Responders

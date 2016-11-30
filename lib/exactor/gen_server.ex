@@ -20,7 +20,7 @@ defmodule ExActor.GenServer do
     quote do
       use GenServer
 
-      @generated_funs HashSet.new
+      @generated_funs MapSet.new
 
       import ExActor.Operations
       import ExActor.Responders
