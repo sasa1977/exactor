@@ -30,13 +30,13 @@ defmodule ClusterTest do
     assert catch_error(ClusterServer.do_diff(3, 2)) == :undef
     assert ClusterServer.diff(3, 2) == {[{:"nonode@nohost", 1}], []}
 
-    assert ClusterServer.timeout1 == {[], [node]}
-    assert ClusterServer.timeout1 == {[], [node]}
-    assert ClusterServer.timeout2(10) == {[], [node]}
-    assert ClusterServer.timeout2(2000) == {[{node, :ok}], []}
-    assert ClusterServer.timeout3 == {[], [node]}
-    assert ClusterServer.timeout3([node], 10) == {[], [node]}
-    assert ClusterServer.timeout3([node], 2000) == {[{node, :ok}], []}
+    assert ClusterServer.timeout1 == {[], [node()]}
+    assert ClusterServer.timeout1 == {[], [node()]}
+    assert ClusterServer.timeout2(10) == {[], [node()]}
+    assert ClusterServer.timeout2(2000) == {[{node(), :ok}], []}
+    assert ClusterServer.timeout3 == {[], [node()]}
+    assert ClusterServer.timeout3([node()], 10) == {[], [node()]}
+    assert ClusterServer.timeout3([node()], 2000) == {[{node(), :ok}], []}
 
     assert ClusterServer.set(4) == :abcast
     assert ClusterServer.get == 4
@@ -52,7 +52,7 @@ defmodule ClusterTest do
     use ExActor.GenServer
 
     defstart start do
-      Process.register(self, :nrca)
+      Process.register(self(), :nrca)
       initial_state(nil)
     end
 

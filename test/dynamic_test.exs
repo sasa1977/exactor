@@ -26,13 +26,13 @@ defmodule DynamicTest do
   end
 
 
-  defmodule HashDictServer do
+  defmodule MapServer do
     use ExActor.Tolerant
     import ExActor.Delegator
 
-    defstart start, do: initial_state(HashDict.new)
+    defstart start, do: initial_state(Map.new)
 
-    delegate_to HashDict do
+    delegate_to Map do
       query get/2
       query size/1
       trans put/3
@@ -42,14 +42,14 @@ defmodule DynamicTest do
   end
 
   test "wrapper" do
-    {:ok, pid} = HashDictServer.start
+    {:ok, pid} = MapServer.start
 
-    assert HashDictServer.get(pid, :a) == nil
-    assert HashDictServer.size(pid) == 0
+    assert MapServer.get(pid, :a) == nil
+    assert MapServer.size(pid) == 0
 
-    HashDictServer.put(pid, :a, 1)
-    assert HashDictServer.get(pid, :a) == 1
-    assert HashDictServer.size(pid) == 1
-    assert HashDictServer.normal_call(pid) == 2
+    MapServer.put(pid, :a, 1)
+    assert MapServer.get(pid, :a) == 1
+    assert MapServer.size(pid) == 1
+    assert MapServer.normal_call(pid) == 2
   end
 end

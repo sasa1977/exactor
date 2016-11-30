@@ -31,7 +31,7 @@ defmodule BasicTest do
     def my_unexported(server), do: GenServer.call(server, :unexported)
 
     defcall reply_leave_state, do: reply(3)
-    defcast leave_state, do: noreply
+    defcast leave_state, do: noreply()
     defcall full_reply, do: set_and_reply(6, 5)
 
     def callp_interface(server), do: private_call(server)
@@ -59,17 +59,17 @@ defmodule BasicTest do
 
     defhandleinfo {:msg1, from} do
       send(from, :reply_msg1)
-      noreply
+      noreply()
     end
 
     defhandleinfo {:msg_get, from}, state: state do
       send(from, state)
-      noreply
+      noreply()
     end
 
     defhandleinfo sender, when: is_pid(sender) do
       send(sender, :echo)
-      noreply
+      noreply()
     end
   end
 
@@ -134,14 +134,14 @@ defmodule BasicTest do
     assert TestServer.test_from(pid) == :ok
     assert_receive :from_ok
 
-    send(pid, {:msg1, self})
+    send(pid, {:msg1, self()})
     assert_receive :reply_msg1
 
     TestServer.set(pid, 10)
-    send(pid, {:msg_get, self})
+    send(pid, {:msg_get, self()})
     assert_receive 10
 
-    send(pid, self)
+    send(pid, self())
     assert_receive :echo
   end
 
@@ -275,7 +275,7 @@ defmodule BasicTest do
 
     defstart start(hibernate? \\ false) do
       if hibernate? do
-        hibernate
+        hibernate()
       else
         timeout_after(50)
       end
@@ -283,7 +283,7 @@ defmodule BasicTest do
     end
 
     defcast noexpire, do: noreply(:infinity)
-    defcast expire, do: noreply
+    defcast expire, do: noreply()
 
     defhandleinfo :timeout, do: stop_server(:normal)
   end
@@ -329,8 +329,11 @@ defmodule BasicTest do
 
     {:ok, pid} = InterfaceReqsServer.start_link
     try do InterfaceReqsServer.bar(pid) catch _,_ -> nil end
-    assert_receive {:EXIT, ^pid, {:bad_cast, :bar}}
-
+    {:ok, vsn} = :application.get_key(:elixir, :vsn)
+    case Version.compare(to_string(vsn), "1.4.0-rc.0") do
+      :lt -> assert_receive {:EXIT, ^pid, {:bad_cast, :bar}}
+      _   -> assert_receive {:EXIT, ^pid, {%RuntimeError{}, _}}
+    end
     Process.flag(:trap_exit, false)
     :timer.sleep(100)
     Logger.add_backend(:console)
