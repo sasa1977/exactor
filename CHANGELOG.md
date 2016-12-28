@@ -1,3 +1,7 @@
+# v2.2.3
+- removed Elixir 1.4 warnings
+- Bugfix: `export: __MODULE__` didn't work in operations macros
+
 # v2.2.2
 - fix compund matches with structs
 

@@ -28,7 +28,7 @@ The stable package is available on [hex](https://hex.pm/packages/exactor).
 Be sure to include a dependency in your `mix.exs`:
 
 ```elixir
-deps: [{:exactor, "~> 2.2.2", warn_missing: false}, ...]
+deps: [{:exactor, "~> 2.2.3", warn_missing: false}, ...]
 ```
 
 `ExActor` is a compile-time dependency only. No need to add it into the list of dependent applications. All code transformations are performed at compile time. If you're using exrm to build OTP releases, you may need to supply the `warn_missing: false` option to prevent warnings about a missing application dependency.
