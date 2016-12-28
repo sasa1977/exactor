@@ -204,7 +204,7 @@ defmodule ExActor.Operations do
       private: private,
       fun: Macro.escape(fun, unquote: true),
       args: Macro.escape(args || [], unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       {interface_matches, payload, match_pattern} = ExActor.Operations.start_args(args)
 
@@ -457,7 +457,7 @@ defmodule ExActor.Operations do
     quote bind_quoted: [
       type: type,
       req_def: Macro.escape(req_def, unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       ExActor.Operations.def_request(type, req_def, Keyword.merge(options, @exactor_global_options))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
@@ -522,7 +522,7 @@ defmodule ExActor.Operations do
     quote bind_quoted: [
       type: type,
       req_def: Macro.escape(req_def, unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       ExActor.Operations.implement_request(type, req_def, Keyword.merge(options, @exactor_global_options))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
@@ -714,7 +714,7 @@ defmodule ExActor.Operations do
   defp impl_defhandleinfo(msg, options) do
     quote bind_quoted: [
       msg: Macro.escape(msg, unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       options = Keyword.merge(options, @exactor_global_options)
 
@@ -755,7 +755,7 @@ defmodule ExActor.Operations do
   defp do_defmulticall(req_def, options) do
     quote bind_quoted: [
       req_def: Macro.escape(req_def, unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       options = Keyword.merge(options, @exactor_global_options)
 
@@ -797,7 +797,7 @@ defmodule ExActor.Operations do
   defp do_defabcast(req_def, options) do
     quote bind_quoted: [
       req_def: Macro.escape(req_def, unquote: true),
-      options: Macro.escape(options, unquote: true)
+      options: escape_options(options)
     ] do
       options = Keyword.merge(options, @exactor_global_options)
 
@@ -807,5 +807,14 @@ defmodule ExActor.Operations do
       ExActor.Operations.def_request(:abcast, req_def, Keyword.drop(options, [:do]))
       |> ExActor.Helper.inject_to_module(__MODULE__, __ENV__)
     end
+  end
+
+  defp escape_options(options) do
+    Enum.map(options,
+      fn
+        {:export, export} -> {:export, export}
+        other -> Macro.escape(other, unquote: true)
+      end
+    )
   end
 end
