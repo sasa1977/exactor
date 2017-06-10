@@ -636,13 +636,13 @@ defmodule ExActor.Operations do
     case options[:export] do
       local when is_atom(local) and local != nil and local != false -> local
       {:local, local} -> local
-      _ -> quote(do: server_pid(server))
+      _ -> quote(do: server)
     end
   end
 
   defp server_ref(options, _) do
     case options[:export] do
-      default when default in [nil, false, true] -> quote(do: server_pid(server))
+      default when default in [nil, false, true] -> quote(do: server)
       local when is_atom(local) -> local
       {:local, local} -> local
       {:global, _} = global -> global
@@ -817,18 +817,4 @@ defmodule ExActor.Operations do
       end
     )
   end
-
-  @doc """
-  By default, the `server` argument given
-  to the different interface functions, is expected to be a process identifier,
-  unless overridden by the `export:` option.
-
-  But by providing a custom implementation of `server_pid/1`, you can map an identifier
-  to a PID by some other means.
-  """
-  def server_pid(server_reference) do
-    server_reference
-  end
-
-  defoverridable [server_pid: 1]
 end
