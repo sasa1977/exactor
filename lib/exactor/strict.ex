@@ -28,6 +28,7 @@ defmodule ExActor.Strict do
   defmacro __using__(opts) do
     quote do
       use ExActor.Behaviour.Strict
+      use ExActor.Common
 
       @generated_funs MapSet.new
 

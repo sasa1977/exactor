@@ -23,6 +23,7 @@ defmodule ExActor.Tolerant do
   defmacro __using__(opts) do
     quote do
       use ExActor.Behaviour.Tolerant
+      use ExActor.Common
 
       @generated_funs MapSet.new
 

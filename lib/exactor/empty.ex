@@ -21,6 +21,7 @@ defmodule ExActor.Empty do
   defmacro __using__(opts) do
     quote do
       @behaviour :gen_server
+      use ExActor.Common
 
       @generated_funs MapSet.new
 

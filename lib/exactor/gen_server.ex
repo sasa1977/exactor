@@ -19,6 +19,7 @@ defmodule ExActor.GenServer do
   defmacro __using__(opts) do
     quote do
       use GenServer
+      use ExActor.Common
 
       @generated_funs MapSet.new
 

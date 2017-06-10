@@ -570,7 +570,8 @@ defmodule ExActor.Operations do
       server_fun: server_fun(type),
       interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
       gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true),
-      guard: Macro.escape(guard(options, :interface), unquote: true)
+      guard: Macro.escape(guard(options, :interface), unquote: true),
+      export_option: Macro.escape(options[:export], unquote: true)
     ] do
       {interface_args, gen_server_args} =
         unless type in [:multicall, :abcast] do
@@ -582,31 +583,32 @@ defmodule ExActor.Operations do
           }
         end
 
-      arity = length(interface_args)
-      unless private do
-        if guard do
-          def unquote(req_name)(unquote_splicing(interface_args))
-            when unquote(guard)
-          do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
+      interface_gen_server_args =
+        if type in [:multicall, :abcast] || export_option do
+          gen_server_args
         else
-          def unquote(req_name)(unquote_splicing(interface_args)) do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
+            # Extract the server reference as first argument,
+            # And call `server_pid/1` on it inside the interface implementation.
+            # (But not in the function head)
+            [server_ref | gen_server_args_tail] = gen_server_args
+            server_pid_quote = quote(do: server_pid(unquote(server_ref)))
+            [server_pid_quote | gen_server_args_tail]
         end
-      else
-        if guard do
-          defp unquote(req_name)(unquote_splicing(interface_args))
-            when unquote(guard)
-          do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
-        else
-          defp unquote(req_name)(unquote_splicing(interface_args)) do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
-        end
+
+      interface_body =
+        quote do
+        GenServer.unquote(server_fun)(unquote_splicing(interface_gen_server_args))
+      end
+
+      cond do
+        private == nil && guard == nil ->
+          def unquote(req_name)(unquote_splicing(interface_args)), do: unquote(interface_body)
+        private == nil && guard != nil ->
+          def unquote(req_name)(unquote_splicing(interface_args)) when unquote(guard), do: unquote(interface_body)
+        private != nil && guard == nil ->
+          defp unquote(req_name)(unquote_splicing(interface_args)), do: unquote(interface_body)
+        private != nil && guard != nil ->
+          defp unquote(req_name)(unquote_splicing(interface_args)) when unquote(guard), do: unquote(interface_body)
       end
     end
   end
