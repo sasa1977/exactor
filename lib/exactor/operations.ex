@@ -582,31 +582,20 @@ defmodule ExActor.Operations do
           }
         end
 
-      arity = length(interface_args)
-      unless private do
-        if guard do
-          def unquote(req_name)(unquote_splicing(interface_args))
-            when unquote(guard)
-          do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
-        else
-          def unquote(req_name)(unquote_splicing(interface_args)) do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
+      interface_body =
+        quote do
+          GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
         end
-      else
-        if guard do
-          defp unquote(req_name)(unquote_splicing(interface_args))
-            when unquote(guard)
-          do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
-        else
-          defp unquote(req_name)(unquote_splicing(interface_args)) do
-            GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
-          end
-        end
+
+      cond do
+        private == nil && guard == nil ->
+          def unquote(req_name)(unquote_splicing(interface_args)), do: unquote(interface_body)
+        private == nil && guard != nil ->
+          def unquote(req_name)(unquote_splicing(interface_args)) when unquote(guard), do: unquote(interface_body)
+        private != nil && guard == nil ->
+          defp unquote(req_name)(unquote_splicing(interface_args)), do: unquote(interface_body)
+        private != nil && guard != nil ->
+          defp unquote(req_name)(unquote_splicing(interface_args)) when unquote(guard), do: unquote(interface_body)
       end
     end
   end
