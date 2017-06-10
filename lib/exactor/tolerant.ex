@@ -31,7 +31,6 @@ defmodule ExActor.Tolerant do
       import ExActor.Responders
 
       unquote(ExActor.Helper.init_generation_state(opts))
-
     end
   end
 end
