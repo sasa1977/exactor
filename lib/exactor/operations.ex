@@ -571,6 +571,7 @@ defmodule ExActor.Operations do
       interface_args: Macro.escape(interface_args(interface_matches, options), unquote: true),
       gen_server_args: Macro.escape(gen_server_args(options, type, payload), unquote: true),
       guard: Macro.escape(guard(options, :interface), unquote: true)
+      # export_option?: Keyword.get(options, :export, nil)
     ] do
       {interface_args, gen_server_args} =
         unless type in [:multicall, :abcast] do
@@ -582,10 +583,12 @@ defmodule ExActor.Operations do
           }
         end
 
+      # Extract the server reference as first argument,
+      # And call `server_pid/1` on it inside the interface implementation.
+      # (But not in the function head)
       [server_ref | gen_server_args_tail] = gen_server_args
-
-      server_pid = quote(do: server_pid(unquote(server_ref)))
-      interface_gen_server_args = [server_pid | gen_server_args_tail]
+      server_pid_quote = quote(do: server_pid(unquote(server_ref)))
+      interface_gen_server_args = [server_pid_quote | gen_server_args_tail]
 
       interface_body =
         quote do
