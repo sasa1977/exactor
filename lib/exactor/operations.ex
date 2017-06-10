@@ -582,9 +582,14 @@ defmodule ExActor.Operations do
           }
         end
 
+      [server_ref | gen_server_args_tail] = gen_server_args
+
+      server_pid = quote(do: server_pid(unquote(server_ref)))
+      interface_gen_server_args = [server_pid | gen_server_args_tail]
+
       interface_body =
         quote do
-          GenServer.unquote(server_fun)(unquote_splicing(gen_server_args))
+          GenServer.unquote(server_fun)(unquote_splicing(interface_gen_server_args))
         end
 
       cond do

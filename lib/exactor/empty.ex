@@ -21,6 +21,7 @@ defmodule ExActor.Empty do
   defmacro __using__(opts) do
     quote do
       @behaviour :gen_server
+      use ExActor.Common
 
       @generated_funs MapSet.new
 
@@ -28,6 +29,22 @@ defmodule ExActor.Empty do
       import ExActor.Responders
 
       unquote(ExActor.Helper.init_generation_state(opts))
+
+
+
+      @doc """
+      By default, the `server` argument given
+      to the different interface functions, is expected to be a process identifier,
+      unless overridden by the `export:` option.
+
+      But by providing a custom implementation of `server_pid/1`, you can map an identifier
+      to a PID by some other means.
+      """
+      def server_pid(server_reference) do
+        server_reference
+      end
+
+      defoverridable [server_pid: 1]
     end
   end
 end
