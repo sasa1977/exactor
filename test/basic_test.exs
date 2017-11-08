@@ -312,6 +312,7 @@ defmodule BasicTest do
     defcast bar
     defcall baz(x, y)
 
+    @impl GenServer
     def handle_call({:baz, x, y}, _, state) do
       {:reply, x+y, state}
     end

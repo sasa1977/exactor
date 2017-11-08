@@ -351,8 +351,10 @@ defmodule ExActor.Operations do
     quote bind_quoted: [opts: Macro.escape(opts, unquote: true)] do
       case ExActor.Operations.guard(opts, :handler) do
         nil ->
+          @impl GenServer
           def init(unquote_splicing([opts[:arg]])), do: unquote(opts[:do])
         guard ->
+          @impl GenServer
           def init(unquote_splicing([opts[:arg]])) when unquote(guard), do: unquote(opts[:do])
       end
     end
@@ -677,10 +679,12 @@ defmodule ExActor.Operations do
       body: Macro.escape(options[:do], unquote: true)
     ] do
       if guard do
+        @impl GenServer
         def unquote(handler_name)(unquote_splicing(handler_args))
           when unquote(guard),
           do: unquote(body)
       else
+        @impl GenServer
         def unquote(handler_name)(unquote_splicing(handler_args)),
           do: unquote(body)
       end

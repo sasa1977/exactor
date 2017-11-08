@@ -4,7 +4,7 @@ defmodule ExActor.Behaviour.Strict do
   @doc false
   defmacro __using__(_) do
     quote location: :keep do
-      @behaviour :gen_server
+      @behaviour GenServer
 
       @doc false
       def init(args) do

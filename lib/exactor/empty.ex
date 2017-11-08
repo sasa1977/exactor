@@ -20,7 +20,7 @@ defmodule ExActor.Empty do
   """
   defmacro __using__(opts) do
     quote do
-      @behaviour :gen_server
+      @behaviour GenServer
 
       @generated_funs MapSet.new
 
