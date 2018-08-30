@@ -16,7 +16,7 @@ Simplifies implementation of `GenServer` based processes in Elixir.
 
 For other cases, you may need to use plain `GenServer` functions (which can be used together with `ExActor` macros). `ExActor` is not meant to fully replace `GenServer`. It just tries to reduce boilerplate in most common cases.
 
-If you're new to Elixir, Erlang, and OTP, and are not familiar on how `GenServer` works, I strongly suggest you learn about it first. It's really not that hard, and you can use [Elixir docs](http://elixir-lang.org/docs/stable/elixir/GenServer.html) as the starting point. It's also worth going through [Mix/OTP getting started guide](http://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html).
+If you're new to Elixir, Erlang, and OTP, and are not familiar on how `GenServer` works, I strongly suggest you learn about it first. It's really not that hard, and you can use [Elixir docs](https://hexdocs.pm/elixir/GenServer.html) as the starting point. It's also worth going through [Mix/OTP getting started guide](https://elixir-lang.org/getting-started/mix-otp/introduction-to-mix.html).
 Once you're familiar with `GenServer`, you can consider using `ExActor` to reduce the boilerplate.
 
 Online documentation is available [here](http://hexdocs.pm/exactor).
